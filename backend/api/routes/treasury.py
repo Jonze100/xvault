@@ -1,148 +1,161 @@
 """
 Treasury API Routes
 
-GET /api/treasury            — Full treasury overview
-GET /api/treasury/pnl        — Historical PnL data points
+All data comes from Supabase (populated by Portfolio Agent every 5 min).
+Falls back to zeros / empty arrays when Supabase is not configured —
+never returns fake hardcoded numbers.
+
+GET /api/treasury             — Latest treasury snapshot
+GET /api/treasury/pnl         — Historical PnL from treasury_snapshots
 GET /api/treasury/risk-heatmap — Protocol risk exposure
-POST /api/treasury/rebalance — Trigger rebalance cycle
+POST /api/treasury/rebalance  — Trigger rebalance cycle
 """
 
-from datetime import datetime, timezone, timedelta
-from typing import Literal
-import random
+import structlog
 import uuid
+from datetime import datetime, timezone
+from typing import Literal
 
 from fastapi import APIRouter, Query
 
-router = APIRouter()
+from db.client import get_supabase
+from config import get_settings
 
+log = structlog.get_logger(__name__)
+router = APIRouter()
+settings = get_settings()
+
+
+# ─── Treasury overview ───────────────────────────────────────────────────────
 
 @router.get("")
 async def get_treasury():
     """
-    Return current treasury state.
-    TODO: Fetch from Supabase treasury snapshot table (populated by Portfolio Agent).
+    Return latest treasury state from Supabase treasury_snapshots.
+    The Portfolio Agent inserts a new snapshot every 5 minutes.
     """
-    # Placeholder — replace with real Supabase query
+    db = get_supabase()
+    snapshot = None
+
+    if db:
+        try:
+            result = (
+                db.table("treasury_snapshots")
+                .select("*")
+                .order("snapshot_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if result.data:
+                snapshot = result.data[0]
+        except Exception as exc:
+            log.warning("treasury.snapshot_query_failed", error=str(exc))
+
+    # Derive performance fees from performance_fees table if available
+    total_fees = 0.0
+    if db:
+        try:
+            fees_result = db.table("performance_fees").select("amount_usd").execute()
+            total_fees = sum(
+                float(r.get("amount_usd", 0))
+                for r in (fees_result.data or [])
+            )
+        except Exception:
+            pass
+
+    if snapshot:
+        assets = snapshot.get("assets") or []
+        total_value = float(snapshot.get("total_value_usd", 0))
+        pnl_24h_usd = float(snapshot.get("pnl_usd", 0))
+        pnl_24h_pct = float(snapshot.get("pnl_pct", 0))
+        risk_score = int(snapshot.get("risk_score", 0))
+
+        return {
+            "success": True,
+            "data": {
+                "id": snapshot.get("id", str(uuid.uuid4())),
+                "name": "XVault Treasury",
+                "total_value_usd": total_value,
+                "total_pnl_24h_usd": pnl_24h_usd,
+                "total_pnl_24h_pct": pnl_24h_pct,
+                "total_pnl_7d_usd": 0.0,
+                "total_pnl_all_time_usd": 0.0,
+                "risk_score": risk_score,
+                "last_rebalance": snapshot.get("snapshot_at", ""),
+                "performance_fees_collected_usd": total_fees,
+                "wallet_address": settings.treasury_wallet_address,
+                "assets": assets,
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+    # No snapshot yet — return zeros so the dashboard shows real emptiness
     return {
         "success": True,
         "data": {
             "id": str(uuid.uuid4()),
             "name": "XVault Treasury",
-            "total_value_usd": 25_840.50,
-            "total_pnl_24h_usd": 342.18,
-            "total_pnl_24h_pct": 1.34,
-            "total_pnl_7d_usd": 1_240.00,
-            "total_pnl_all_time_usd": 3_420.00,
-            "risk_score": 38,
-            "last_rebalance": "2025-04-14T10:30:00Z",
-            "performance_fees_collected_usd": 342.00,
-            "assets": [
-                {
-                    "symbol": "ETH",
-                    "name": "Ethereum",
-                    "address": "0x0000000000000000000000000000000000000000",
-                    "chain": "xlayer",
-                    "balance": 3.2,
-                    "price_usd": 3200.0,
-                    "value_usd": 10_240.0,
-                    "allocation_pct": 39.6,
-                    "pnl_24h_pct": 2.3,
-                    "pnl_24h_usd": 230.0,
-                },
-                {
-                    "symbol": "USDC",
-                    "name": "USD Coin",
-                    "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-                    "chain": "xlayer",
-                    "balance": 8_500.0,
-                    "price_usd": 1.0,
-                    "value_usd": 8_500.0,
-                    "allocation_pct": 32.9,
-                    "pnl_24h_pct": 0.0,
-                    "pnl_24h_usd": 0.0,
-                },
-                {
-                    "symbol": "OKB",
-                    "name": "OKB Token",
-                    "address": "0x75231f58b43240c9718dd58b4967c5114342a86c",
-                    "chain": "xlayer",
-                    "balance": 150.0,
-                    "price_usd": 45.0,
-                    "value_usd": 6_750.0,
-                    "allocation_pct": 26.1,
-                    "pnl_24h_pct": 3.8,
-                    "pnl_24h_usd": 247.5,
-                },
-                {
-                    "symbol": "WBTC",
-                    "name": "Wrapped Bitcoin",
-                    "address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
-                    "chain": "xlayer",
-                    "balance": 0.003,
-                    "price_usd": 98_000.0,
-                    "value_usd": 294.0,
-                    "allocation_pct": 1.1,
-                    "pnl_24h_pct": 1.1,
-                    "pnl_24h_usd": 3.2,
-                },
-            ],
+            "total_value_usd": 0.0,
+            "total_pnl_24h_usd": 0.0,
+            "total_pnl_24h_pct": 0.0,
+            "total_pnl_7d_usd": 0.0,
+            "total_pnl_all_time_usd": 0.0,
+            "risk_score": 0,
+            "last_rebalance": None,
+            "performance_fees_collected_usd": total_fees,
+            "wallet_address": settings.treasury_wallet_address,
+            "assets": [],
         },
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
+
+# ─── PnL history ─────────────────────────────────────────────────────────────
 
 @router.get("/pnl")
 async def get_pnl_history(
     time_range: Literal["24h", "7d", "30d", "all"] = Query("24h", alias="range"),
 ):
     """
-    Return historical PnL data points for chart rendering.
-    TODO: Query Supabase treasury_snapshots table.
+    Return historical PnL data points from Supabase treasury_snapshots.
+    Returns empty array before Portfolio Agent has run.
     """
-    now = datetime.now(timezone.utc)
-    points = []
+    db = get_supabase()
+    points: list[dict] = []
 
-    if time_range == "24h":
-        for i in range(48):
-            t = now - timedelta(minutes=30 * (47 - i))
-            base = 25_000 + random.uniform(-200, 200)
-            points.append({
-                "timestamp": t.isoformat(),
-                "value_usd": base + i * 17,
-                "pnl_usd": i * 17 - 100,
-                "pnl_pct": (i * 17 - 100) / 25_000 * 100,
-            })
-    elif time_range == "7d":
-        for i in range(7 * 24):
-            t = now - timedelta(hours=(7 * 24 - i))
-            base = 24_000 + random.uniform(-500, 500)
-            points.append({
-                "timestamp": t.isoformat(),
-                "value_usd": base + i * 2.4,
-                "pnl_usd": i * 2.4 - 500,
-                "pnl_pct": (i * 2.4 - 500) / 24_000 * 100,
-            })
-    elif time_range == "30d":
-        for i in range(30):
-            t = now - timedelta(days=(30 - i))
-            base = 22_000 + random.uniform(-1_000, 1_000)
-            points.append({
-                "timestamp": t.isoformat(),
-                "value_usd": base + i * 130,
-                "pnl_usd": i * 130 - 1_000,
-                "pnl_pct": (i * 130 - 1_000) / 22_000 * 100,
-            })
-    elif time_range == "all":
-        for i in range(90):
-            t = now - timedelta(days=(90 - i))
-            base = 18_000 + random.uniform(-2_000, 2_000)
-            points.append({
-                "timestamp": t.isoformat(),
-                "value_usd": base + i * 87,
-                "pnl_usd": i * 87 - 2_000,
-                "pnl_pct": (i * 87 - 2_000) / 18_000 * 100,
-            })
+    if db:
+        try:
+            from datetime import timedelta
+            now = datetime.now(timezone.utc)
+            cutoffs = {
+                "24h": now - timedelta(hours=24),
+                "7d":  now - timedelta(days=7),
+                "30d": now - timedelta(days=30),
+                "all": None,
+            }
+            cutoff = cutoffs[time_range]
+
+            query = (
+                db.table("treasury_snapshots")
+                .select("total_value_usd, pnl_usd, pnl_pct, snapshot_at")
+                .order("snapshot_at", desc=False)
+                .limit(500)
+            )
+            if cutoff:
+                query = query.gte("snapshot_at", cutoff.isoformat())
+
+            result = query.execute()
+            points = [
+                {
+                    "timestamp": r["snapshot_at"],
+                    "value_usd": float(r.get("total_value_usd", 0)),
+                    "pnl_usd": float(r.get("pnl_usd", 0)),
+                    "pnl_pct": float(r.get("pnl_pct", 0)),
+                }
+                for r in (result.data or [])
+            ]
+        except Exception as exc:
+            log.warning("treasury.pnl_query_failed", error=str(exc))
 
     return {
         "success": True,
@@ -151,34 +164,69 @@ async def get_pnl_history(
     }
 
 
+# ─── Risk heatmap ─────────────────────────────────────────────────────────────
+
 @router.get("/risk-heatmap")
 async def get_risk_heatmap():
     """
-    Return risk heatmap data: protocol exposure vs risk score.
-    TODO: Aggregate from Supabase + real-time okx-security scores.
+    Protocol risk heatmap. Risk scores are computed by Risk Agent via okx-security.
+    Returns live data from Supabase if available; falls back to empty list.
     """
+    db = get_supabase()
+    data: list[dict] = []
+
+    if db:
+        try:
+            # Risk assessments are stored in agent_logs by the Risk Agent
+            result = (
+                db.table("agent_logs")
+                .select("data, created_at")
+                .eq("agent_name", "risk")
+                .eq("decision_type", "risk_assessment")
+                .order("created_at", desc=True)
+                .limit(50)
+                .execute()
+            )
+            seen: set[str] = set()
+            for row in (result.data or []):
+                row_data = row.get("data") or {}
+                protocol = row_data.get("token") or row_data.get("protocol")
+                if protocol and protocol not in seen:
+                    seen.add(protocol)
+                    data.append({
+                        "protocol": protocol,
+                        "chain": "xlayer",
+                        "exposure_usd": float(row_data.get("exposure_usd", 0)),
+                        "risk_score": int(100 - row_data.get("security_score", 100)),
+                        "audit_score": int(row_data.get("security_score", 100)),
+                    })
+        except Exception as exc:
+            log.warning("treasury.heatmap_query_failed", error=str(exc))
+
     return {
         "success": True,
-        "data": [
-            {"protocol": "Stargate", "chain": "xlayer", "exposure_usd": 2000, "risk_score": 22, "audit_score": 90},
-            {"protocol": "Aave",    "chain": "xlayer", "exposure_usd": 1500, "risk_score": 18, "audit_score": 95},
-            {"protocol": "Curve",   "chain": "ethereum", "exposure_usd": 800, "risk_score": 15, "audit_score": 97},
-            {"protocol": "GMX",     "chain": "xlayer", "exposure_usd": 1200, "risk_score": 45, "audit_score": 82},
-            {"protocol": "Unknown", "chain": "xlayer", "exposure_usd": 400,  "risk_score": 78, "audit_score": 40},
-            {"protocol": "Uniswap", "chain": "xlayer", "exposure_usd": 2200, "risk_score": 12, "audit_score": 98},
-        ],
+        "data": data,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
+# ─── Rebalance trigger ────────────────────────────────────────────────────────
+
 @router.post("/rebalance")
 async def trigger_rebalance():
-    """
-    Trigger a manual rebalance cycle via the orchestrator.
-    TODO: Enqueue a run_cycle() call to the orchestrator.
-    """
+    """Trigger a manual rebalance cycle via the orchestrator."""
+    from crons.scheduler import get_orchestrator
+    try:
+        orchestrator = get_orchestrator()
+        import asyncio
+        asyncio.create_task(orchestrator.run_cycle())
+        status = "queued"
+    except Exception as exc:
+        log.warning("treasury.rebalance_trigger_failed", error=str(exc))
+        status = "failed"
+
     return {
-        "success": True,
-        "data": {"job_id": str(uuid.uuid4()), "status": "queued"},
+        "success": status == "queued",
+        "data": {"job_id": str(uuid.uuid4()), "status": status},
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

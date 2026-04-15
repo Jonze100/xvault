@@ -30,6 +30,7 @@ from anthropic import AsyncAnthropic
 
 from config import get_settings
 from api.websocket import broadcast
+from api.state import update_agent_status as _update_state
 
 log = structlog.get_logger(__name__)
 settings = get_settings()
@@ -395,9 +396,11 @@ Respond ONLY with valid JSON:
         }
 
     async def _broadcast_status(self, status: str) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        _update_state(self.NAME, status, "Risk assessment", now)
         await broadcast("agent_status_update", {
             "name": self.NAME,
             "status": status,
             "last_action": "Risk assessment",
-            "last_action_at": datetime.now(timezone.utc).isoformat(),
+            "last_action_at": now,
         })

@@ -39,6 +39,7 @@ from anthropic import AsyncAnthropic
 from config import get_settings
 from db.client import get_supabase
 from api.websocket import broadcast
+from api.state import update_agent_status as _update_state
 
 log = structlog.get_logger(__name__)
 settings = get_settings()
@@ -461,9 +462,11 @@ class EconomyAgent:
         return bool(result and result.get("paymentProof"))
 
     async def _broadcast_status(self, status: str) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        _update_state(self.NAME, status, "Fee collection & distribution", now)
         await broadcast("agent_status_update", {
             "name": self.NAME,
             "status": status,
             "last_action": "Fee collection & distribution",
-            "last_action_at": datetime.now(timezone.utc).isoformat(),
+            "last_action_at": now,
         })

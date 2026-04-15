@@ -122,9 +122,24 @@ class XVaultWebSocket {
 }
 
 // Singleton instance
-const WS_URL =
-  (typeof window !== "undefined" && process.env.NEXT_PUBLIC_WS_URL) ||
-  "ws://localhost:8000/ws";
+// Priority: explicit WS_URL > derived from API_URL > localhost default
+function buildWsUrl(): string {
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    return process.env.NEXT_PUBLIC_WS_URL;
+  }
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    // Auto-derive WS URL from API URL:
+    //   https://backend.railway.app  →  wss://backend.railway.app/ws
+    //   http://localhost:8000        →  ws://localhost:8000/ws
+    return process.env.NEXT_PUBLIC_API_URL
+      .replace(/^https:/, "wss:")
+      .replace(/^http:/, "ws:")
+      .replace(/\/$/, "") + "/ws";
+  }
+  return "ws://localhost:8000/ws";
+}
+
+const WS_URL = buildWsUrl();
 
 export const xvaultWS = new XVaultWebSocket(WS_URL);
 export type { WSEvent, WSEventType };

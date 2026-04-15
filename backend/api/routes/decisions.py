@@ -1,69 +1,32 @@
 """
 Decisions API Routes
 
-GET /api/decisions — Paginated decision log
+GET /api/decisions — Paginated decision log from Supabase agent_logs table.
+Returns empty list (not demo data) when Supabase is not configured.
 """
 
-import uuid
-from datetime import datetime, timezone, timedelta
-import random
-
+import structlog
+from datetime import datetime, timezone
 from fastapi import APIRouter, Query
 
+from db.client import get_supabase
+
+log = structlog.get_logger(__name__)
 router = APIRouter()
 
-SAMPLE_DECISIONS = [
-    {
-        "id": str(uuid.uuid4()),
-        "agent": "signal",
-        "type": "signal_detected",
-        "reasoning": "ETH showing strong momentum on okx-dex-signal with 73% confidence. Smart money inflows detected via okx-dex-trenches.",
-        "confidence": 0.73,
-        "data": {"token": "ETH", "action": "buy", "size_pct": 5.0},
-        "timestamp": (datetime.now(timezone.utc) - timedelta(minutes=2)).isoformat(),
-        "tx_hash": None,
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "agent": "risk",
-        "type": "trade_approved",
-        "reasoning": "ETH scored 88/100 on okx-security. Trail of Bits audit passed. No concentration issues.",
-        "confidence": 0.95,
-        "data": {"token": "ETH", "security_score": 88},
-        "timestamp": (datetime.now(timezone.utc) - timedelta(minutes=1, seconds=45)).isoformat(),
-        "tx_hash": None,
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "agent": "execution",
-        "type": "trade_executed",
-        "reasoning": "Swapped 1000 USDC → 0.3125 ETH via okx-dex-swap on X Layer. Slippage: 0.3%",
-        "confidence": 1.0,
-        "data": {"from": "USDC", "to": "ETH", "amount": 1000},
-        "timestamp": (datetime.now(timezone.utc) - timedelta(minutes=1, seconds=20)).isoformat(),
-        "tx_hash": f"0x{uuid.uuid4().hex}",
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "agent": "portfolio",
-        "type": "position_opened",
-        "reasoning": "ETH position updated. Portfolio now at 39.6% ETH, within 25% per-token limit.",
-        "confidence": 1.0,
-        "data": {"asset": "ETH", "new_allocation": 39.6},
-        "timestamp": (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat(),
-        "tx_hash": None,
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "agent": "economy",
-        "type": "fee_collected",
-        "reasoning": "Collected $34.20 performance fee (10%) on $342 profit via x402.",
-        "confidence": 1.0,
-        "data": {"fee_usd": 34.20, "profit_usd": 342.0},
-        "timestamp": (datetime.now(timezone.utc) - timedelta(seconds=30)).isoformat(),
-        "tx_hash": f"0x{uuid.uuid4().hex}",
-    },
-]
+
+def _row_to_decision(row: dict) -> dict:
+    """Map Supabase agent_logs row to the shape the frontend expects."""
+    return {
+        "id": row.get("id", ""),
+        "agent": row.get("agent_name", ""),
+        "type": row.get("decision_type", ""),
+        "reasoning": row.get("reasoning", ""),
+        "confidence": float(row.get("confidence") or 0),
+        "data": row.get("data") or {},
+        "tx_hash": row.get("tx_hash"),
+        "timestamp": row.get("created_at", ""),
+    }
 
 
 @router.get("")
@@ -74,28 +37,51 @@ async def get_decisions(
     limit: int | None = Query(None),
 ):
     """
-    Paginated decision log from all agents.
-    TODO: Query Supabase agent_logs table with ordering by timestamp DESC.
+    Paginated decision log from Supabase agent_logs table.
+    Falls back to an empty list when Supabase is unavailable.
+    Live inserts arrive via WebSocket agent_decision events — the frontend
+    merges them in real-time without polling.
     """
-    items = SAMPLE_DECISIONS
-    if agent:
-        items = [d for d in items if d["agent"] == agent]
-    if limit:
-        items = items[:limit]
+    db = get_supabase()
 
-    total = len(items)
-    start = (page - 1) * page_size
-    end = start + page_size
-    page_items = items[start:end]
+    if db:
+        try:
+            start = (page - 1) * page_size
+            end = start + page_size - 1
+
+            query = (
+                db.table("agent_logs")
+                .select("*")
+                .order("created_at", desc=True)
+                .range(start, end)
+            )
+            if agent:
+                query = query.eq("agent_name", agent)
+            if limit:
+                query = query.limit(limit)
+
+            result = query.execute()
+            items = [_row_to_decision(r) for r in (result.data or [])]
+
+            # Approximate total (Supabase count requires separate query)
+            total = len(items) + start
+
+        except Exception as exc:
+            log.warning("decisions.supabase_error", error=str(exc))
+            items = []
+            total = 0
+    else:
+        items = []
+        total = 0
 
     return {
         "success": True,
         "data": {
-            "items": page_items,
+            "items": items,
             "total": total,
             "page": page,
             "page_size": page_size,
-            "has_more": end < total,
+            "has_more": len(items) == page_size,
         },
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

@@ -1,57 +1,55 @@
 """
 Economy API Routes
 
-GET /api/economy/fees     — Performance fee history
-GET /api/economy/earnings — Agent earnings breakdown
-GET /api/economy/totals   — Lifetime totals
+GET /api/economy/fees     — Performance fee history from Supabase
+GET /api/economy/earnings — Agent earnings breakdown from Supabase
+GET /api/economy/totals   — Lifetime totals from Supabase
+
+Falls back to zeros when Supabase is not configured.
 """
 
-import uuid
-from datetime import datetime, timezone, timedelta
+import structlog
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Query
 
+from db.client import get_supabase
+
+log = structlog.get_logger(__name__)
 router = APIRouter()
 
 
 @router.get("/fees")
 async def get_fees_history(limit: int = Query(20, ge=1, le=100)):
-    """
-    Recent performance fee collection events.
-    TODO: Query Supabase performance_fees table.
-    """
-    fees = [
-        {
-            "id": str(uuid.uuid4()),
-            "amount_usd": 34.20,
-            "trigger_profit_usd": 342.0,
-            "fee_pct": 10.0,
-            "timestamp": (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat(),
-            "distributions": [
-                {"agent": "signal",    "amount_usd": 13.68, "pct": 40, "tx_hash": f"0x{uuid.uuid4().hex}"},
-                {"agent": "risk",      "amount_usd": 10.26, "pct": 30, "tx_hash": f"0x{uuid.uuid4().hex}"},
-                {"agent": "execution", "amount_usd": 6.84,  "pct": 20, "tx_hash": f"0x{uuid.uuid4().hex}"},
-                {"agent": "portfolio", "amount_usd": 3.42,  "pct": 10, "tx_hash": f"0x{uuid.uuid4().hex}"},
-            ],
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "amount_usd": 82.50,
-            "trigger_profit_usd": 825.0,
-            "fee_pct": 10.0,
-            "timestamp": (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat(),
-            "distributions": [
-                {"agent": "signal",    "amount_usd": 33.0,  "pct": 40, "tx_hash": f"0x{uuid.uuid4().hex}"},
-                {"agent": "risk",      "amount_usd": 24.75, "pct": 30, "tx_hash": f"0x{uuid.uuid4().hex}"},
-                {"agent": "execution", "amount_usd": 16.5,  "pct": 20, "tx_hash": f"0x{uuid.uuid4().hex}"},
-                {"agent": "portfolio", "amount_usd": 8.25,  "pct": 10, "tx_hash": f"0x{uuid.uuid4().hex}"},
-            ],
-        },
-    ]
+    """Performance fee collection events from Supabase performance_fees table."""
+    db = get_supabase()
+    fees: list[dict] = []
+
+    if db:
+        try:
+            result = (
+                db.table("performance_fees")
+                .select("*")
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            for row in (result.data or []):
+                fees.append({
+                    "id": row.get("id", ""),
+                    "amount_usd": float(row.get("amount_usd", 0)),
+                    "trigger_profit_usd": float(row.get("trigger_profit_usd", 0)),
+                    "fee_pct": float(row.get("fee_pct", 10)),
+                    "timestamp": row.get("created_at", ""),
+                    "tx_hash": row.get("collection_tx_hash"),
+                    "distributions": row.get("distributions") or [],
+                })
+        except Exception as exc:
+            log.warning("economy.fees_query_failed", error=str(exc))
 
     return {
         "success": True,
-        "data": fees[:limit],
+        "data": fees,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -59,32 +57,67 @@ async def get_fees_history(limit: int = Query(20, ge=1, le=100)):
 @router.get("/earnings")
 async def get_agent_earnings():
     """
-    Lifetime earnings per agent from x402 fee distributions.
-    TODO: Query Supabase agent_wallets table.
+    Lifetime earnings per agent from fee_distributions table.
     """
+    db = get_supabase()
+    earnings: dict[str, float] = {
+        "signal": 0.0,
+        "risk": 0.0,
+        "execution": 0.0,
+        "portfolio": 0.0,
+        "economy": 0.0,
+    }
+
+    if db:
+        try:
+            result = (
+                db.table("fee_distributions")
+                .select("agent_name, amount_usd")
+                .execute()
+            )
+            for row in (result.data or []):
+                agent = row.get("agent_name", "")
+                if agent in earnings:
+                    earnings[agent] += float(row.get("amount_usd", 0))
+        except Exception as exc:
+            log.warning("economy.earnings_query_failed", error=str(exc))
+
     return {
         "success": True,
-        "data": {
-            "signal":    186.40,
-            "risk":      139.80,
-            "execution": 93.20,
-            "portfolio": 46.60,
-            "economy":   0.00,   # Economy collects, doesn't receive
-        },
+        "data": earnings,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
 @router.get("/totals")
 async def get_totals():
-    """Lifetime economy totals."""
+    """Lifetime economy totals from Supabase."""
+    db = get_supabase()
+    total_fees = 0.0
+    total_distributed = 0.0
+    fee_events = 0
+
+    if db:
+        try:
+            result = db.table("performance_fees").select("amount_usd").execute()
+            rows = result.data or []
+            total_fees = sum(float(r.get("amount_usd", 0)) for r in rows)
+            fee_events = len(rows)
+
+            dist_result = db.table("fee_distributions").select("amount_usd").execute()
+            total_distributed = sum(
+                float(r.get("amount_usd", 0)) for r in (dist_result.data or [])
+            )
+        except Exception as exc:
+            log.warning("economy.totals_query_failed", error=str(exc))
+
     return {
         "success": True,
         "data": {
-            "total_fees_usd": 466.00,
-            "total_distributed_usd": 466.00,
-            "fee_events": 12,
-            "avg_fee_usd": 38.83,
+            "total_fees_usd": total_fees,
+            "total_distributed_usd": total_distributed,
+            "fee_events": fee_events,
+            "avg_fee_usd": total_fees / fee_events if fee_events > 0 else 0.0,
         },
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

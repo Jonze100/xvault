@@ -34,6 +34,7 @@ from anthropic import AsyncAnthropic
 from config import get_settings
 from db.client import get_supabase
 from api.websocket import broadcast
+from api.state import update_agent_status as _update_state
 
 log = structlog.get_logger(__name__)
 settings = get_settings()
@@ -313,21 +314,28 @@ Respond ONLY with a valid JSON array. Be conservative — Risk Agent will vet yo
 
     async def _log_decision(self, signal: dict) -> None:
         """Persist signal to Supabase agent_logs table."""
+        if not self.db:
+            return
         try:
             self.db.table("agent_logs").insert({
-                "agent": self.NAME,
-                "type": "signal_detected",
+                "agent_name": self.NAME,
+                "decision_type": "signal_detected",
+                "reasoning": signal.get("reasoning", f"Signal detected for {signal.get('token','?')}"),
+                "confidence": float(signal.get("confidence", 0)),
                 "data": signal,
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "tx_hash": None,
             }).execute()
         except Exception as e:
             log.warning("signal_agent.log_decision.failed", error=str(e))
 
     async def _update_status(self, status: str) -> None:
-        """Update agent status in Supabase and broadcast via WebSocket."""
+        """Update in-memory state and broadcast via WebSocket."""
+        action = f"Signal scan {'completed' if status == 'active' else 'running'}"
+        now = datetime.now(timezone.utc).isoformat()
+        _update_state(self.NAME, status, action, now)
         await broadcast("agent_status_update", {
             "name": self.NAME,
             "status": status,
-            "last_action": f"Signal scan {'completed' if status == 'active' else 'running'}",
-            "last_action_at": datetime.now(timezone.utc).isoformat(),
+            "last_action": action,
+            "last_action_at": now,
         })

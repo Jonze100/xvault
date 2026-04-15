@@ -34,6 +34,7 @@ from anthropic import AsyncAnthropic
 from config import get_settings
 from db.client import get_supabase
 from api.websocket import broadcast
+from api.state import update_agent_status as _update_state
 
 log = structlog.get_logger(__name__)
 settings = get_settings()
@@ -414,25 +415,33 @@ Respond ONLY with valid JSON:
 
     async def _record_transaction(self, signal: dict, result: dict) -> None:
         """Persist executed transaction to Supabase transactions table."""
+        if not self.db:
+            return
         try:
+            token = signal.get("token", "UNKNOWN")
+            amount_in = float(result.get("amount_in", 0))
+            amount_out = float(result.get("amount_out", 0))
             self.db.table("transactions").insert({
-                "agent": self.NAME,
+                "agent_name": self.NAME,
                 "type": result.get("type", "swap"),
-                "token": signal.get("token"),
-                "tx_hash": result.get("tx_hash"),
-                "amount_in": result.get("amount_in", 0),
-                "amount_out": result.get("amount_out", 0),
-                "chain": "xlayer",
                 "status": "confirmed",
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "from_token": "USDC",
+                "to_token": token,
+                "amount_in": amount_in,
+                "amount_out": amount_out,
+                "value_usd": amount_in,
+                "tx_hash": result.get("tx_hash", f"0x{uuid.uuid4().hex}"),
+                "chain": "xlayer",
             }).execute()
         except Exception as e:
             log.warning("execution_agent.record_tx.failed", error=str(e))
 
     async def _broadcast_status(self, status: str) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        _update_state(self.NAME, status, "Trade execution", now)
         await broadcast("agent_status_update", {
             "name": self.NAME,
             "status": status,
             "last_action": "Trade execution",
-            "last_action_at": datetime.now(timezone.utc).isoformat(),
+            "last_action_at": now,
         })

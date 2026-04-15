@@ -59,7 +59,11 @@ if settings.app_env != "production":
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_origin_regex=r"https://(.*\.vercel\.app|.*\.railway\.app|xvault\.vercel\.app)",
+    allow_origin_regex=(
+        r"https://(.*\.vercel\.app|.*\.railway\.app|"
+        r"xvault\.vercel\.app|xxxxvaultt\.up\.railway\.app|"
+        r"xxxxvaultt-.*\.railway\.app)"
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

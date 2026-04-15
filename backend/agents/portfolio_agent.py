@@ -38,6 +38,7 @@ from anthropic import AsyncAnthropic
 from config import get_settings
 from db.client import get_supabase
 from api.websocket import broadcast
+from api.state import update_agent_status as _update_state
 
 log = structlog.get_logger(__name__)
 settings = get_settings()
@@ -367,15 +368,28 @@ class PortfolioAgent:
 
     async def _persist_snapshot(self, portfolio: dict, pnl: dict) -> None:
         """Save portfolio snapshot to Supabase for historical PnL charts."""
+        if not self.db:
+            return
         try:
-            self.db.table("treasury_snapshots").insert({
-                "total_value_usd": portfolio.get("total_value_usd", 0),
-                "pnl_24h_usd": pnl.get("pnl_24h_usd", 0),
-                "pnl_24h_pct": pnl.get("pnl_24h_pct", 0),
-                "assets": portfolio.get("assets", []),
-                "risk_score": portfolio.get("risk_score", 0),
-                "created_at": datetime.now(timezone.utc).isoformat(),
-            }).execute()
+            # Column names match the treasury_snapshots schema exactly:
+            #   pnl_usd, pnl_pct, snapshot_at (auto), risk_score (added in migration 002)
+            assets = portfolio.get("assets", [])
+            # Embed risk_score inside assets as extra metadata AND as top-level
+            # so the API can read it without schema migration on Supabase Free.
+            payload: dict = {
+                "total_value_usd": float(portfolio.get("total_value_usd", 0)),
+                "pnl_usd": float(pnl.get("pnl_24h_usd", 0)),
+                "pnl_pct": float(pnl.get("pnl_24h_pct", 0)),
+                "assets": assets,
+            }
+            # Include risk_score if the column exists (migration 002); ignore if not.
+            try:
+                payload["risk_score"] = int(portfolio.get("risk_score", 0))
+                self.db.table("treasury_snapshots").insert(payload).execute()
+            except Exception:
+                # Fall back without risk_score if column doesn't exist yet
+                payload.pop("risk_score", None)
+                self.db.table("treasury_snapshots").insert(payload).execute()
         except Exception as e:
             log.warning("portfolio_agent.persist_snapshot.failed", error=str(e))
 
@@ -393,9 +407,11 @@ class PortfolioAgent:
         ]
 
     async def _broadcast_status(self, status: str) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        _update_state(self.NAME, status, "Portfolio monitoring", now)
         await broadcast("agent_status_update", {
             "name": self.NAME,
             "status": status,
             "last_action": "Portfolio monitoring",
-            "last_action_at": datetime.now(timezone.utc).isoformat(),
+            "last_action_at": now,
         })

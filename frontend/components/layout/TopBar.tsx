@@ -9,67 +9,75 @@ interface Props {
   onMenuClick?: () => void;
 }
 
-// ── OKX Wallet hook ─────────────────────────────────────────────────────────
+// ── Wallet hook — OKX first, then any EIP-1193 injected provider ────────────
 
 type WalletState =
-  | { status: "idle" }
-  | { status: "unavailable" }
+  | { status: "idle" }        // no extension detected yet / after disconnect
   | { status: "connecting" }
-  | { status: "connected"; address: string };
+  | { status: "connected"; address: string; providerName: string };
 
-function useOKXWallet() {
+/** Pick the best available EIP-1193 provider: OKX > window.ethereum */
+function getProvider(): { provider: EIP1193Provider; name: string } | null {
+  if (typeof window === "undefined") return null;
+  if (window.okxwallet?.ethereum) return { provider: window.okxwallet.ethereum, name: "OKX" };
+  if (window.ethereum) {
+    const name = window.ethereum.isMetaMask ? "MetaMask" : "Wallet";
+    return { provider: window.ethereum, name };
+  }
+  return null;
+}
+
+function useWalletConnect() {
   const [wallet, setWallet] = useState<WalletState>({ status: "idle" });
 
-  // After mount, check if extension is present
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!window.okxwallet) {
-      setWallet({ status: "unavailable" });
-    }
-    // If already permitted, try to re-use the existing connection
-    window.okxwallet?.ethereum
-      ?.request({ method: "eth_accounts" })
+    const detected = getProvider();
+    if (!detected) return;
+    const { provider } = detected;
+
+    // Restore a previously-permitted connection silently
+    provider
+      .request({ method: "eth_accounts" })
       .then((raw) => {
         const accounts = raw as string[];
         if (accounts.length > 0) {
-          setWallet({ status: "connected", address: accounts[0] });
+          setWallet({ status: "connected", address: accounts[0], providerName: detected.name });
         }
       })
       .catch(() => {});
 
-    // Listen for account changes
     const handler = (...args: unknown[]) => {
       const accounts = args[0] as string[];
       if (accounts.length === 0) setWallet({ status: "idle" });
-      else setWallet({ status: "connected", address: accounts[0] });
+      else setWallet({ status: "connected", address: accounts[0], providerName: detected.name });
     };
-    window.okxwallet?.ethereum?.on("accountsChanged", handler);
-    return () => {
-      window.okxwallet?.ethereum?.removeListener("accountsChanged", handler);
-    };
+    provider.on("accountsChanged", handler);
+    return () => provider.removeListener("accountsChanged", handler);
   }, []);
 
   const connect = useCallback(async () => {
-    if (!window.okxwallet) {
+    const detected = getProvider();
+    if (!detected) {
+      // No wallet at all — open OKX wallet install page
       window.open("https://www.okx.com/web3/build/docs/devportal/wallet-extension", "_blank");
       return;
     }
     setWallet({ status: "connecting" });
     try {
-      const accounts = (await window.okxwallet.ethereum.request({
+      const accounts = (await detected.provider.request({
         method: "eth_requestAccounts",
       })) as string[];
       if (accounts.length > 0) {
-        setWallet({ status: "connected", address: accounts[0] });
+        setWallet({ status: "connected", address: accounts[0], providerName: detected.name });
+      } else {
+        setWallet({ status: "idle" });
       }
     } catch {
       setWallet({ status: "idle" });
     }
   }, []);
 
-  const disconnect = useCallback(() => {
-    setWallet({ status: "idle" });
-  }, []);
+  const disconnect = useCallback(() => setWallet({ status: "idle" }), []);
 
   return { wallet, connect, disconnect };
 }
@@ -83,7 +91,7 @@ function shortenAddress(addr: string) {
 export default function TopBar({ onMenuClick }: Props) {
   const { isConnected, reconnect } = useWSConnection();
   const { theme, setTheme } = useTheme();
-  const { wallet, connect, disconnect } = useOKXWallet();
+  const { wallet, connect, disconnect } = useWalletConnect();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -124,14 +132,20 @@ export default function TopBar({ onMenuClick }: Props) {
           <span className="hidden sm:inline">{isConnected ? "Live" : "Reconnect"}</span>
         </button>
 
-        {/* OKX Wallet button — only after mount to avoid SSR mismatch */}
+        {/* Wallet button — only after mount to avoid SSR mismatch */}
         {mounted && (
           <>
             {wallet.status === "connected" ? (
               <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-vault-900/40 border border-vault-700/40 text-xs text-vault-400 font-mono">
+                <div
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-vault-900/40 border border-vault-700/40 text-xs text-vault-400 font-mono cursor-default"
+                  title={wallet.address}
+                >
                   <Wallet className="w-3 h-3 shrink-0" />
-                  <span className="hidden xs:inline">{shortenAddress(wallet.address)}</span>
+                  <span>{shortenAddress(wallet.address)}</span>
+                  <span className="hidden sm:inline text-vault-600 font-sans">
+                    · {wallet.providerName}
+                  </span>
                 </div>
                 <button
                   onClick={disconnect}
@@ -141,16 +155,6 @@ export default function TopBar({ onMenuClick }: Props) {
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
-            ) : wallet.status === "unavailable" ? (
-              <a
-                href="https://www.okx.com/web3/build/docs/devportal/wallet-extension"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-700 text-xs text-zinc-500 hover:text-zinc-300 hover:border-zinc-500 transition-colors"
-              >
-                <Wallet className="w-3 h-3" />
-                Install OKX Wallet
-              </a>
             ) : (
               <button
                 onClick={connect}

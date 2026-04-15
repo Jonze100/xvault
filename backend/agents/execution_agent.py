@@ -35,6 +35,7 @@ from config import get_settings
 from db.client import get_supabase
 from api.websocket import broadcast
 from api.state import update_agent_status as _update_state
+import api.state as _state
 
 log = structlog.get_logger(__name__)
 settings = get_settings()
@@ -421,7 +422,7 @@ Respond ONLY with valid JSON:
             token = signal.get("token", "UNKNOWN")
             amount_in = float(result.get("amount_in", 0))
             amount_out = float(result.get("amount_out", 0))
-            self.db.table("transactions").insert({
+            row: dict = {
                 "agent_name": self.NAME,
                 "type": result.get("type", "swap"),
                 "status": "confirmed",
@@ -432,7 +433,10 @@ Respond ONLY with valid JSON:
                 "value_usd": amount_in,
                 "tx_hash": result.get("tx_hash", f"0x{uuid.uuid4().hex}"),
                 "chain": "xlayer",
-            }).execute()
+            }
+            if _state.default_treasury_id:
+                row["treasury_id"] = _state.default_treasury_id
+            self.db.table("transactions").insert(row).execute()
         except Exception as e:
             log.warning("execution_agent.record_tx.failed", error=str(e))
 

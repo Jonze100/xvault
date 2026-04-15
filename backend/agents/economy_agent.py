@@ -40,6 +40,7 @@ from config import get_settings
 from db.client import get_supabase
 from api.websocket import broadcast
 from api.state import update_agent_status as _update_state
+import api.state as _state
 
 log = structlog.get_logger(__name__)
 settings = get_settings()
@@ -398,20 +399,48 @@ class EconomyAgent:
     async def _record_fee_event(
         self, profit_usd: float, fee_usd: float, distributions: list[dict]
     ) -> dict[str, Any]:
-        """Persist fee event and distributions to Supabase."""
-        fee_event = {
-            "id": str(uuid.uuid4()),
+        """Persist fee event and per-agent distributions to Supabase."""
+        fee_id = str(uuid.uuid4())
+        fee_row: dict = {
+            "id": fee_id,
             "amount_usd": fee_usd,
             "trigger_profit_usd": profit_usd,
             "fee_pct": self.FEE_BPS / 100,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "distributions": distributions,
         }
+        if _state.default_treasury_id:
+            fee_row["treasury_id"] = _state.default_treasury_id
+        # Collect tx_hash from the first successful distribution
+        tx = next((d.get("tx_hash") for d in distributions if d.get("tx_hash")), None)
+        if tx:
+            fee_row["collection_tx_hash"] = tx
+
         try:
-            self.db.table("performance_fees").insert(fee_event).execute()
+            self.db.table("performance_fees").insert(fee_row).execute()
         except Exception as e:
             log.warning("economy_agent.record_fee.failed", error=str(e))
-        return fee_event
+
+        # Persist each agent's distribution row
+        if self.db and distributions:
+            for dist in distributions:
+                try:
+                    dist_row: dict = {
+                        "fee_id": fee_id,
+                        "agent_name": dist.get("agent", dist.get("agent_name", "")),
+                        "amount_usd": float(dist.get("amount_usd", 0)),
+                        "pct": float(dist.get("pct", dist.get("split_pct", 0))),
+                    }
+                    if dist.get("tx_hash"):
+                        dist_row["tx_hash"] = dist["tx_hash"]
+                    self.db.table("fee_distributions").insert(dist_row).execute()
+                except Exception as e:
+                    log.warning("economy_agent.record_dist.failed", error=str(e))
+
+        return {
+            "id": fee_id,
+            "amount_usd": fee_usd,
+            "trigger_profit_usd": profit_usd,
+            "distributions": distributions,
+        }
 
     async def process_agent_purchase(
         self, agent_name: str, service: str, cost_usd: float

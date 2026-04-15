@@ -92,3 +92,8 @@ def increment_decisions(name: str) -> None:
     """Increment the decisions_today counter for an agent."""
     if name in agent_states:
         agent_states[name]["decisions_today"] += 1
+
+
+# Default treasury UUID — set at startup by _ensure_default_treasury() in main.py.
+# Agents include this as treasury_id when persisting snapshots/transactions.
+default_treasury_id: str | None = None

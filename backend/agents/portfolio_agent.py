@@ -39,6 +39,7 @@ from config import get_settings
 from db.client import get_supabase
 from api.websocket import broadcast
 from api.state import update_agent_status as _update_state
+import api.state as _state
 
 log = structlog.get_logger(__name__)
 settings = get_settings()
@@ -382,6 +383,8 @@ class PortfolioAgent:
                 "pnl_pct": float(pnl.get("pnl_24h_pct", 0)),
                 "assets": assets,
             }
+            if _state.default_treasury_id:
+                payload["treasury_id"] = _state.default_treasury_id
             # Include risk_score if the column exists (migration 002); ignore if not.
             try:
                 payload["risk_score"] = int(portfolio.get("risk_score", 0))

@@ -94,7 +94,7 @@ async def get_treasury():
 
 @router.get("/pnl")
 async def get_pnl_history(
-    range: Literal["24h", "7d", "30d", "all"] = Query("24h"),
+    time_range: Literal["24h", "7d", "30d", "all"] = Query("24h", alias="range"),
 ):
     """
     Return historical PnL data points for chart rendering.
@@ -103,7 +103,7 @@ async def get_pnl_history(
     now = datetime.now(timezone.utc)
     points = []
 
-    if range == "24h":
+    if time_range == "24h":
         for i in range(48):
             t = now - timedelta(minutes=30 * (47 - i))
             base = 25_000 + random.uniform(-200, 200)
@@ -113,15 +113,35 @@ async def get_pnl_history(
                 "pnl_usd": i * 17 - 100,
                 "pnl_pct": (i * 17 - 100) / 25_000 * 100,
             })
-    elif range == "7d":
+    elif time_range == "7d":
         for i in range(7 * 24):
-            t = now - timedelta(hours=(7*24 - i))
+            t = now - timedelta(hours=(7 * 24 - i))
             base = 24_000 + random.uniform(-500, 500)
             points.append({
                 "timestamp": t.isoformat(),
                 "value_usd": base + i * 2.4,
                 "pnl_usd": i * 2.4 - 500,
                 "pnl_pct": (i * 2.4 - 500) / 24_000 * 100,
+            })
+    elif time_range == "30d":
+        for i in range(30):
+            t = now - timedelta(days=(30 - i))
+            base = 22_000 + random.uniform(-1_000, 1_000)
+            points.append({
+                "timestamp": t.isoformat(),
+                "value_usd": base + i * 130,
+                "pnl_usd": i * 130 - 1_000,
+                "pnl_pct": (i * 130 - 1_000) / 22_000 * 100,
+            })
+    elif time_range == "all":
+        for i in range(90):
+            t = now - timedelta(days=(90 - i))
+            base = 18_000 + random.uniform(-2_000, 2_000)
+            points.append({
+                "timestamp": t.isoformat(),
+                "value_usd": base + i * 87,
+                "pnl_usd": i * 87 - 2_000,
+                "pnl_pct": (i * 87 - 2_000) / 18_000 * 100,
             })
 
     return {

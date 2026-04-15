@@ -47,7 +47,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS — in development allow all localhost origins so any Next.js dev port works
+# CORS — always allow localhost in dev; always allow *.vercel.app + *.railway.app
 _cors_origins = settings.cors_origins_list
 if settings.app_env != "production":
     _cors_origins = list({
@@ -59,6 +59,7 @@ if settings.app_env != "production":
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
+    allow_origin_regex=r"https://(.*\.vercel\.app|.*\.railway\.app|xvault\.vercel\.app)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -61,8 +61,7 @@ app.add_middleware(
     allow_origins=_cors_origins,
     allow_origin_regex=(
         r"https://(.*\.vercel\.app|.*\.railway\.app|"
-        r"xvault\.vercel\.app|xxxxvaultt\.up\.railway\.app|"
-        r"xxxxvaultt-.*\.railway\.app)"
+        r"xvault\.vercel\.app|xxxxvaultt-production\.up\.railway\.app)"
     ),
     allow_credentials=True,
     allow_methods=["*"],

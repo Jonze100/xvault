@@ -7,6 +7,7 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import type { Treasury } from "@/lib/types";
 import { Vault } from "lucide-react";
+import { useTheme } from "next-themes";
 
 const COLORS = ["#14b8a6", "#3b82f6", "#8b5cf6", "#f59e0b", "#f43f5e", "#10b981"];
 
@@ -17,6 +18,8 @@ interface Props {
 }
 
 export default function TreasuryOverview({ treasury, loading, isOffline }: Props) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   if (loading) {
     return (
       <div className="space-y-2">
@@ -80,10 +83,11 @@ export default function TreasuryOverview({ treasury, loading, isOffline }: Props
               "Value",
             ]}
             contentStyle={{
-              background: "#18181b",
-              border: "1px solid #27272a",
+              background: isDark ? "#18181b" : "#ffffff",
+              border: isDark ? "1px solid #27272a" : "1px solid #e4e4e7",
               borderRadius: "8px",
               fontSize: "12px",
+              color: isDark ? "#f4f4f5" : "#18181b",
             }}
           />
         </PieChart>

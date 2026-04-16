@@ -35,12 +35,26 @@ async def execute_command(body: CommandRequest):
     - "Pause signal agent" → agents API → toggle pause
     - "What is our risk score?" → portfolio agent → return current risk
     """
-    orchestrator = get_orchestrator()
-    result = await orchestrator.handle_command(body.command)
-
     from datetime import datetime, timezone
-    return {
-        "success": result.get("success", True),
-        "data": result,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
+    try:
+        orchestrator = get_orchestrator()
+        result = await orchestrator.handle_command(body.command)
+        return {
+            "success": result.get("success", True),
+            "data": result,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    except Exception as exc:
+        err_str = str(exc)
+        # Surface billing / API key errors as a readable message
+        if "credit balance" in err_str or "insufficient" in err_str.lower():
+            msg = "Anthropic API credits exhausted — please top up at console.anthropic.com."
+        elif "api_key" in err_str.lower() or "authentication" in err_str.lower():
+            msg = "Anthropic API key invalid or missing."
+        else:
+            msg = f"Command error: {err_str[:120]}"
+        return {
+            "success": False,
+            "data": {"success": False, "agent": "signal", "message": msg, "action": "error"},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }

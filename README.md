@@ -2,7 +2,7 @@
 
 > **OKX X Layer Hackathon submission** — Five specialized AI agents collaborate in real-time to manage an onchain DeFi treasury. They scan signals, vet risk, execute trades, monitor portfolio health, and pay each other using x402 micropayments — all autonomously, all onchain.
 
-**Live Demo** → [xxxvaullt-g333cyg68-jonze100s-projects.vercel.app](https://xxxvaullt-g333cyg68-jonze100s-projects.vercel.app)  
+**Live Demo** → [xxxxvaultt.vercel.app](https://xxxxvaultt.vercel.app)  
 **Backend API** → [xvault-backend-production.up.railway.app](https://xvault-backend-production.up.railway.app/docs)  
 **GitHub** → [github.com/Jonze100/xvault](https://github.com/Jonze100/xvault)
 

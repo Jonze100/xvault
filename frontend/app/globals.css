@@ -47,6 +47,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -60,75 +63,104 @@
 .glass-card {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Light mode — clean white cards with subtle shadow */
+/* Light mode — solid white cards, NO blur (blur causes blurry text rendering) */
 :root:not(.dark) .glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
+  background: #ffffff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border: 1px solid hsl(var(--border));
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0 transparent;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 8px rgba(0,0,0,0.04);
 }
 
 /* ── Light mode text-color remapping ───────────────────────────────────────── */
-/* In light mode the zinc-100/200/300 text classes are near-white → invisible.
-   Remap them inside content areas to legible dark values.                      */
-:root:not(.dark) .glass-card,
-:root:not(.dark) main {
-  --zinc-100-text: hsl(224 15% 10%);
-  --zinc-200-text: hsl(224 12% 18%);
-  --zinc-300-text: hsl(220 10% 28%);
-  --zinc-400-text: hsl(218  8% 38%);
-  --zinc-500-text: hsl(216  6% 48%);
-  --zinc-600-text: hsl(215  5% 56%);
-}
+/* zinc-100 through white are near-invisible on light backgrounds — remap all. */
 
-/* Override specific text utilities in light mode content areas */
+:root:not(.dark) main .text-white,
+:root:not(.dark) .glass-card .text-white         { color: hsl(224 15% 8%)  !important; }
+
 :root:not(.dark) main .text-zinc-100,
-:root:not(.dark) .glass-card .text-zinc-100 { color: hsl(224 15% 10%) !important; }
+:root:not(.dark) .glass-card .text-zinc-100      { color: hsl(224 15% 10%) !important; }
 
 :root:not(.dark) main .text-zinc-200,
-:root:not(.dark) .glass-card .text-zinc-200 { color: hsl(224 12% 18%) !important; }
+:root:not(.dark) .glass-card .text-zinc-200      { color: hsl(224 12% 18%) !important; }
 
 :root:not(.dark) main .text-zinc-300,
-:root:not(.dark) .glass-card .text-zinc-300 { color: hsl(220 10% 28%) !important; }
+:root:not(.dark) .glass-card .text-zinc-300      { color: hsl(220 10% 28%) !important; }
 
 :root:not(.dark) main .text-zinc-400,
-:root:not(.dark) .glass-card .text-zinc-400 { color: hsl(218  8% 40%) !important; }
+:root:not(.dark) .glass-card .text-zinc-400      { color: hsl(218  8% 40%) !important; }
 
 :root:not(.dark) main .text-zinc-500,
-:root:not(.dark) .glass-card .text-zinc-500 { color: hsl(216  6% 50%) !important; }
+:root:not(.dark) .glass-card .text-zinc-500      { color: hsl(216  6% 50%) !important; }
 
 :root:not(.dark) main .text-zinc-600,
-:root:not(.dark) .glass-card .text-zinc-600 { color: hsl(215  5% 58%) !important; }
+:root:not(.dark) .glass-card .text-zinc-600      { color: hsl(215  5% 58%) !important; }
 
-/* Dark background blocks inside cards need to be lightened */
+:root:not(.dark) main .text-gray-100,
+:root:not(.dark) .glass-card .text-gray-100      { color: hsl(224 15% 10%) !important; }
+
+:root:not(.dark) main .text-gray-200,
+:root:not(.dark) .glass-card .text-gray-200      { color: hsl(224 12% 20%) !important; }
+
+:root:not(.dark) main .text-gray-300,
+:root:not(.dark) .glass-card .text-gray-300      { color: hsl(220 10% 30%) !important; }
+
+:root:not(.dark) main .text-gray-400,
+:root:not(.dark) .glass-card .text-gray-400      { color: hsl(218  8% 42%) !important; }
+
+:root:not(.dark) main .text-slate-100,
+:root:not(.dark) .glass-card .text-slate-100     { color: hsl(224 15% 10%) !important; }
+
+:root:not(.dark) main .text-slate-200,
+:root:not(.dark) .glass-card .text-slate-200     { color: hsl(224 12% 20%) !important; }
+
+:root:not(.dark) main .text-slate-300,
+:root:not(.dark) .glass-card .text-slate-300     { color: hsl(220 10% 30%) !important; }
+
+:root:not(.dark) main .text-slate-400,
+:root:not(.dark) .glass-card .text-slate-400     { color: hsl(218  8% 42%) !important; }
+
+/* Dark background blocks inside cards — lighten for readability */
 :root:not(.dark) .glass-card .bg-zinc-900\/50,
-:root:not(.dark) .glass-card .bg-zinc-900 {
-  background-color: hsl(214 15% 94%) !important;
-}
+:root:not(.dark) .glass-card .bg-zinc-900,
+:root:not(.dark) main .bg-zinc-900\/50,
+:root:not(.dark) main .bg-zinc-900            { background-color: hsl(214 15% 94%) !important; }
+
 :root:not(.dark) .glass-card .bg-zinc-800,
-:root:not(.dark) .glass-card .bg-zinc-800\/30 {
-  background-color: hsl(214 12% 90%) !important;
-}
+:root:not(.dark) .glass-card .bg-zinc-800\/30,
+:root:not(.dark) main .bg-zinc-800,
+:root:not(.dark) main .bg-zinc-800\/30        { background-color: hsl(214 12% 91%) !important; }
+
+:root:not(.dark) .glass-card .bg-zinc-700,
+:root:not(.dark) main .bg-zinc-700            { background-color: hsl(214 10% 87%) !important; }
+
 :root:not(.dark) .glass-card .hover\:bg-zinc-800:hover,
-:root:not(.dark) .glass-card .hover\:bg-zinc-900:hover {
-  background-color: hsl(214 12% 88%) !important;
-}
+:root:not(.dark) .glass-card .hover\:bg-zinc-900:hover,
+:root:not(.dark) main .hover\:bg-zinc-800:hover,
+:root:not(.dark) main .hover\:bg-zinc-900:hover { background-color: hsl(214 12% 88%) !important; }
 
-/* Borders inside cards */
+/* Borders */
 :root:not(.dark) .glass-card .border-zinc-800,
-:root:not(.dark) .glass-card .border-zinc-800\/50 {
-  border-color: hsl(214 15% 87%) !important;
-}
+:root:not(.dark) .glass-card .border-zinc-800\/50,
+:root:not(.dark) main .border-zinc-800,
+:root:not(.dark) main .border-zinc-800\/50    { border-color: hsl(214 15% 86%) !important; }
 
-/* Form inputs in light mode */
-:root:not(.dark) input[class*="bg-zinc-900"] {
+:root:not(.dark) .glass-card .border-zinc-700,
+:root:not(.dark) main .border-zinc-700        { border-color: hsl(214 12% 82%) !important; }
+
+/* Form inputs */
+:root:not(.dark) input[class*="bg-zinc-"],
+:root:not(.dark) textarea[class*="bg-zinc-"] {
   background-color: hsl(214 15% 96%) !important;
-  border-color: hsl(214 15% 82%) !important;
-  color: hsl(224 15% 10%) !important;
+  border-color:     hsl(214 15% 82%) !important;
+  color:            hsl(224 15% 10%) !important;
 }
+:root:not(.dark) input::placeholder,
+:root:not(.dark) textarea::placeholder { color: hsl(215 6% 55%) !important; }
 
 /* ── Neon / glow effects ───────────────────────────────────────────────────── */
 .vault-glow {

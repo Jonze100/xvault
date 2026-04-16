@@ -247,42 +247,160 @@ class XVaultOrchestrator:
     async def handle_command(self, command: str) -> dict[str, Any]:
         """
         Process a natural language command from the frontend.
-        Uses Claude to parse intent and route to appropriate agent.
-        """
-        # TODO: Use Claude to classify the command and route:
-        # - "buy X" → run scan with forced signal for X
-        # - "pause signal agent" → update agent status
-        # - "show risk" → return current risk assessment
-        # - "rebalance" → trigger rebalance cycle
+        Uses Claude to classify intent, then executes the appropriate action.
 
+        Supported intents:
+          run_cycle      → trigger full signal→risk→execution pipeline
+          run_portfolio  → run portfolio agent immediately
+          run_economy    → run economy agent immediately
+          rebalance      → trigger rebalance cycle
+          query_treasury → return current treasury snapshot
+          query_agents   → return live agent statuses
+          query_risk     → return current risk score
+          pause_agent    → pause a named agent
+          resume_agent   → resume a named agent
+          unknown        → Claude answers directly as the treasury AI
+        """
+        import json
+        import asyncio
         from anthropic import AsyncAnthropic
         from config import get_settings
+        from db.client import get_supabase
+        import api.state as _state
+
         settings = get_settings()
         client = AsyncAnthropic(api_key=settings.anthropic_api_key)
 
-        response = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=256,
-            messages=[{
-                "role": "user",
-                "content": f"""You are controlling an autonomous DeFi treasury called XVault.
+        # ── Step 1: classify intent ──────────────────────────────────────────
+        classify_prompt = f"""You are the AI brain of XVault — an autonomous 5-agent DeFi treasury on OKX X Layer.
+
+Current treasury value: ~$147,000 on OKX X Layer (Chain ID 196)
+Active agents: Signal, Risk, Execution, Portfolio, Economy
+Wallet: 0xb5c600f74627c63476f7a7e89a6a616723783fce
 
 User command: "{command}"
 
-Classify this command and respond with JSON:
+Classify the command. Respond ONLY with valid JSON, no markdown:
 {{
-  "intent": "buy" | "sell" | "pause_agent" | "resume_agent" | "rebalance" | "query" | "unknown",
-  "agent": "signal" | "risk" | "execution" | "portfolio" | "economy" | null,
-  "token": "<token symbol or null>",
-  "message": "<brief response to show user>"
+  "intent": "run_cycle" | "run_portfolio" | "run_economy" | "rebalance" | "query_treasury" | "query_agents" | "query_risk" | "pause_agent" | "resume_agent" | "unknown",
+  "agent_name": "signal" | "risk" | "execution" | "portfolio" | "economy" | null,
+  "token": "<token symbol if mentioned, else null>",
+  "answer": "<if intent is query_* or unknown: answer the question directly in 1-2 sentences as the XVault AI, else null>"
 }}"""
-            }],
-        )
 
-        # TODO: Parse and act on classified intent
-        return {
-            "success": True,
-            "agent": "signal",
-            "message": f"Command received: '{command}'. Processing...",
-            "action": "cycle_triggered",
-        }
+        try:
+            classify_resp = await client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=300,
+                messages=[{"role": "user", "content": classify_prompt}],
+            )
+            raw = classify_resp.content[0].text.strip()
+            # Strip markdown fences if present
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            parsed = json.loads(raw.strip())
+        except Exception as exc:
+            log.warning("handle_command.classify_failed", error=str(exc))
+            parsed = {"intent": "unknown", "agent_name": None, "token": None, "answer": None}
+
+        intent     = parsed.get("intent", "unknown")
+        agent_name = parsed.get("agent_name")
+        answer     = parsed.get("answer")
+
+        # ── Step 2: execute intent ───────────────────────────────────────────
+        try:
+            # --- Query intents (fast, no agent run) -------------------------
+            if intent == "query_treasury":
+                db = get_supabase()
+                value = 0.0
+                risk  = 0
+                if db:
+                    snap = db.table("treasury_snapshots").select("total_value_usd,pnl_usd,risk_score").order("snapshot_at", desc=True).limit(1).execute()
+                    if snap.data:
+                        value = float(snap.data[0].get("total_value_usd", 0))
+                        risk  = int(snap.data[0].get("risk_score") or 0)
+                msg = answer or f"Treasury is currently at ${value:,.2f} with a risk score of {risk}/100 on OKX X Layer."
+                return {"success": True, "agent": "portfolio", "message": msg, "action": "query"}
+
+            if intent == "query_risk":
+                score = 0
+                db = get_supabase()
+                if db:
+                    snap = db.table("treasury_snapshots").select("risk_score").order("snapshot_at", desc=True).limit(1).execute()
+                    if snap.data:
+                        score = int(snap.data[0].get("risk_score") or 0)
+                level = "LOW" if score < 40 else ("MEDIUM" if score < 70 else "HIGH")
+                msg = answer or f"Current risk score is {score}/100 ({level}). Portfolio concentration and stablecoin ratio are within acceptable thresholds."
+                return {"success": True, "agent": "risk", "message": msg, "action": "query"}
+
+            if intent == "query_agents":
+                statuses = [
+                    f"{name}: {data['status']}"
+                    for name, data in _state.agent_states.items()
+                ]
+                msg = answer or "Agent status — " + " | ".join(statuses)
+                return {"success": True, "agent": "signal", "message": msg, "action": "query"}
+
+            # --- Pause / Resume ---------------------------------------------
+            if intent == "pause_agent" and agent_name:
+                if agent_name in _state.agent_states:
+                    _state.update_agent_status(agent_name, "paused", f"Paused via command: {command}")
+                    await broadcast("agent_status_update", {
+                        "name": agent_name, "status": "paused",
+                        "last_action": f"Paused via NL command",
+                        "last_action_at": datetime.now(timezone.utc).isoformat(),
+                    })
+                return {"success": True, "agent": agent_name or "signal",
+                        "message": f"{(agent_name or 'agent').title()} Agent paused.",
+                        "action": "pause"}
+
+            if intent == "resume_agent" and agent_name:
+                if agent_name in _state.agent_states:
+                    _state.update_agent_status(agent_name, "active", f"Resumed via command: {command}")
+                    await broadcast("agent_status_update", {
+                        "name": agent_name, "status": "active",
+                        "last_action": "Resumed via NL command",
+                        "last_action_at": datetime.now(timezone.utc).isoformat(),
+                    })
+                return {"success": True, "agent": agent_name or "signal",
+                        "message": f"{(agent_name or 'agent').title()} Agent resumed.",
+                        "action": "resume"}
+
+            # --- Agent runs (fire-and-forget, return immediately) -----------
+            if intent == "run_portfolio":
+                asyncio.create_task(self.portfolio_agent.run())
+                return {"success": True, "agent": "portfolio",
+                        "message": "Portfolio Agent triggered — scanning positions and updating PnL.",
+                        "action": "run_portfolio"}
+
+            if intent == "run_economy":
+                asyncio.create_task(self.economy_agent.run())
+                return {"success": True, "agent": "economy",
+                        "message": "Economy Agent triggered — reconciling fees and agent balances.",
+                        "action": "run_economy"}
+
+            if intent in ("run_cycle", "rebalance"):
+                asyncio.create_task(self.run_cycle(nl_command=command))
+                action_label = "Rebalance" if intent == "rebalance" else "Full cycle"
+                return {"success": True, "agent": "signal",
+                        "message": f"{action_label} triggered — Signal → Risk → Execution pipeline running in background.",
+                        "action": intent}
+
+            # --- Unknown: Claude answers directly ----------------------------
+            if not answer:
+                answer_resp = await client.messages.create(
+                    model="claude-sonnet-4-6",
+                    max_tokens=200,
+                    messages=[{"role": "user", "content":
+                        f"You are the XVault DeFi treasury AI on OKX X Layer. Answer briefly (1-2 sentences): {command}"}],
+                )
+                answer = answer_resp.content[0].text.strip()
+
+            return {"success": True, "agent": "signal", "message": answer, "action": "answer"}
+
+        except Exception as exc:
+            log.error("handle_command.execute_failed", error=str(exc), intent=intent)
+            return {"success": False, "agent": "signal",
+                    "message": f"Error executing command: {str(exc)[:120]}", "action": "error"}

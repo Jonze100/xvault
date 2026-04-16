@@ -26,6 +26,23 @@ router = APIRouter()
 settings = get_settings()
 
 
+def _compute_risk_from_assets(assets: list[dict]) -> int:
+    """Compute risk score from assets JSON when the DB column is unavailable."""
+    if not assets:
+        return 0
+    total = sum(float(a.get("value_usd", 0)) for a in assets)
+    if total <= 0:
+        return 0
+    max_alloc = max(float(a.get("allocation_pct", 0)) for a in assets) / 100
+    stable_pct = sum(
+        float(a.get("allocation_pct", 0))
+        for a in assets
+        if a.get("symbol", "") in ("USDC", "USDT", "DAI")
+    ) / 100
+    score = int((max_alloc * 60) + ((1 - stable_pct) * 40))
+    return min(100, max(0, score))
+
+
 # ─── Treasury overview ───────────────────────────────────────────────────────
 
 @router.get("")
@@ -68,7 +85,11 @@ async def get_treasury():
         total_value = float(snapshot.get("total_value_usd", 0))
         pnl_24h_usd = float(snapshot.get("pnl_usd", 0))
         pnl_24h_pct = float(snapshot.get("pnl_pct", 0))
-        risk_score = int(snapshot.get("risk_score", 0))
+        risk_score = int(snapshot.get("risk_score") or 0)
+
+        # Fallback: compute risk score from assets if column was missing/zero
+        if risk_score == 0 and assets:
+            risk_score = _compute_risk_from_assets(assets)
 
         return {
             "success": True,

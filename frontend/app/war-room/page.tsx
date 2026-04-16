@@ -1,12 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import MessageFeed from "@/components/war-room/MessageFeed";
 import AgentCommsGraph from "@/components/war-room/AgentCommsGraph";
 import LiveDecisionPanel from "@/components/war-room/LiveDecisionPanel";
 import { useAgents } from "@/hooks/useAgents";
 import { useWSEvents } from "@/hooks/useWSEvents";
-import type { AgentMessage, AgentDecision } from "@/lib/types";
+import { decisionsApi } from "@/lib/api";
+import type { AgentMessage, AgentDecision, AgentName } from "@/lib/types";
+
+/** Convert a decision log entry into a synthetic agent message for the feed. */
+function decisionToMessage(d: AgentDecision): AgentMessage {
+  return {
+    id: d.id,
+    from_agent: d.agent as AgentName,
+    to_agent: "all",
+    content: d.reasoning || `${d.type} — confidence ${(d.confidence * 100).toFixed(0)}%`,
+    type: "broadcast",
+    timestamp: d.timestamp,
+  };
+}
 
 export default function WarRoomPage() {
   const { agents } = useAgents();
@@ -14,13 +27,36 @@ export default function WarRoomPage() {
   const [decisions, setDecisions] = useState<AgentDecision[]>([]);
   const messageEndRef = useRef<HTMLDivElement>(null);
 
-  useWSEvents("agent_message", (data: AgentMessage) => {
-    setMessages((prev) => [data, ...prev].slice(0, 200));
-  });
+  // Load historical decisions on mount
+  useEffect(() => {
+    let cancelled = false;
+    decisionsApi.getAll(1, 50).then((res) => {
+      if (cancelled) return;
+      const items = res?.data?.items ?? [];
+      if (items.length) {
+        setDecisions((prev) => {
+          const ids = new Set(prev.map((d) => d.id));
+          const merged = [...prev, ...items.filter((d) => !ids.has(d.id))];
+          return merged.sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 100);
+        });
+        setMessages((prev) => {
+          const ids = new Set(prev.map((m) => m.id));
+          const newMsgs = items.filter((d) => !ids.has(d.id)).map(decisionToMessage);
+          const merged = [...prev, ...newMsgs];
+          return merged.sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 200);
+        });
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
-  useWSEvents("agent_decision", (data: AgentDecision) => {
+  useWSEvents("agent_message", useCallback((data: AgentMessage) => {
+    setMessages((prev) => [data, ...prev].slice(0, 200));
+  }, []));
+
+  useWSEvents("agent_decision", useCallback((data: AgentDecision) => {
     setDecisions((prev) => [data, ...prev].slice(0, 100));
-  });
+  }, []));
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });

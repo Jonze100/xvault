@@ -12,7 +12,7 @@
 
 XVault is a fully autonomous DeFi treasury manager. You deposit assets, set risk thresholds, and five AI agents take over:
 
-1. **Signal Agent** scans OKX DEX data every 5 minutes for trade opportunities
+1. **Signal Agent** scans OKX DEX data every 60 minutes for trade opportunities
 2. **Risk Agent** vets every opportunity for security risks before anything is touched
 3. **Execution Agent** executes approved swaps and yield deployments via OKX DEX
 4. **Portfolio Agent** monitors positions, tracks PnL, and flags rebalancing needs
@@ -26,7 +26,7 @@ The agents communicate through a LangGraph state machine — each decision is lo
 
 | | |
 |---|---|
-| **Economy Agent Wallet** | [`0xb5c600f74627c63476f7a7e89a6a616723783fce`](https://www.okx.com/explorer/xlayer/address/0xb5c600f74627c63476f7a7e89a6a616723783fce) |
+| **Agentic Wallet** | [`0x10bfbc3a505e78c3721993945ccbd391f8048f91`](https://www.okx.com/explorer/xlayer/address/0x10bfbc3a505e78c3721993945ccbd391f8048f91) |
 | **Network** | OKX X Layer — Chain ID 196 |
 
 ---
@@ -54,7 +54,7 @@ Market Data (OKX DEX)
                                                                ┌─────────────────┐
                                                                │ Economy Agent   │
                                                                │ x402 payments   │
-                                                               │ 0xb5c6...3fce   │
+                                                               │ 0x10bf...8f91   │
                                                                └─────────────────┘
 ```
 
@@ -110,7 +110,7 @@ Agents use their earnings to pay for premium OKX data feeds — creating a self-
 - **War Room** — Real-time agent-to-agent message visualization with animated network graph
 - **Live Decisions Feed** — Every agent decision with reasoning, confidence %, and tx hash
 - **Natural Language Commands** — Tell the agents what to do in plain English
-- **OKX Wallet Connect** — Connect OKX Wallet, MetaMask, or any EIP-1193 wallet
+- **Agentic Wallet Login** — Email OTP login via OKX Onchain OS agentic wallet
 - **Light / Dark theme** — Fully themed with OKX brand colors
 
 ---
@@ -121,7 +121,7 @@ Agents use their earnings to pay for premium OKX data feeds — creating a self-
 |-------|-----------|
 | Frontend | Next.js 16, TypeScript, Tailwind CSS, Recharts, SWR |
 | Backend | Python 3.11, FastAPI, LangGraph, APScheduler |
-| AI | Claude Sonnet (Anthropic) — agent reasoning engine |
+| AI | Claude Sonnet 4.6 (Anthropic) — agent reasoning engine |
 | Blockchain | OKX X Layer (Chain ID 196) |
 | OKX Integration | 14 OKX Onchain OS skills via Claude Code MCP |
 | Database | Supabase (PostgreSQL) |

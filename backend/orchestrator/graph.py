@@ -276,7 +276,7 @@ class XVaultOrchestrator:
 
 Current treasury value: ~$147,000 on OKX X Layer (Chain ID 196)
 Active agents: Signal, Risk, Execution, Portfolio, Economy
-Wallet: 0xb5c600f74627c63476f7a7e89a6a616723783fce
+Wallet: 0x10bfbc3a505e78c3721993945ccbd391f8048f91
 
 User command: "{command}"
 

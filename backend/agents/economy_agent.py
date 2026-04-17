@@ -1,7 +1,7 @@
 """
 Economy Agent — x402 Micropayments & Agent Economy Management
 
-Agentic Wallet: 0xb5c600f74627c63476f7a7e89a6a616723783fce (OKX X Layer)
+Agentic Wallet: 0x10bfbc3a505e78c3721993945ccbd391f8048f91 (OKX X Layer)
 OKX Onchain OS Skills used:
   - x402   The HTTP 402 Payment Required protocol for machine-to-machine micropayments.
            Economy Agent uses x402 to:
@@ -231,7 +231,7 @@ class EconomyAgent:
         CLI: onchainos payment x402-pay --accepts <json> --from <payer_address>
 
         Collects the performance fee from the treasury wallet into the Economy
-        Agent's master wallet (0xb5c600f74627c63476f7a7e89a6a616723783fce).
+        Agent's master wallet (0x10bfbc3a505e78c3721993945ccbd391f8048f91).
 
         --accepts: JSON `accepts` array (see _x402_accepts helper above).
                    The CLI reads this to determine payment scheme, network,
@@ -249,7 +249,7 @@ class EconomyAgent:
                 "signature": "0x...",
                 "authorization": {
                   "from": "0x...",
-                  "to": "0xb5c6...",
+                  "to": "0x10bf...",
                   "value": "73800000",   // USDC base units
                   "validAfter": "...",
                   "validBefore": "...",
@@ -304,7 +304,7 @@ class EconomyAgent:
 
         Each call:
           --accepts: JSON array specifying the recipient agent wallet and USDC amount.
-          --from:    Economy Agent wallet (0xb5c600f74627c63476f7a7e89a6a616723783fce).
+          --from:    Economy Agent wallet (0x10bfbc3a505e78c3721993945ccbd391f8048f91).
 
         The Economy Agent acts autonomously — no human approval needed because
         the wallet is registered as an agentic wallet via `onchainos wallet login`.

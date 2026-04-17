@@ -135,9 +135,10 @@ async def wallet_verify(body: VerifyRequest):
     _session.xlayer_address = xlayer_addr or evm_addr
     _session.evm_address = evm_addr
 
-    # Update the treasury wallet address in settings and agent state
+    # Update the treasury wallet address in settings and all agent states
     if _session.xlayer_address:
         settings.treasury_wallet_address = _session.xlayer_address
+        _state.set_active_wallet(_session.xlayer_address)
         log.info("wallet.treasury_updated", address=_session.xlayer_address)
 
     # Broadcast wallet connected event to frontend
@@ -171,7 +172,7 @@ async def wallet_status():
                     _session.email = data.get("email")
                     _session.account_id = data.get("currentAccountId")
                     _session.account_name = data.get("currentAccountName")
-                    # Also fetch addresses if we don't have them
+                    # Also fetch addresses if we don't have them and propagate
                     if not _session.xlayer_address:
                         addrs = await _run_onchainos("wallet", "addresses")
                         if addrs and addrs.get("ok"):
@@ -182,6 +183,9 @@ async def wallet_status():
                             evm_list = addr_data.get("evm", [])
                             if evm_list:
                                 _session.evm_address = evm_list[0].get("address")
+                    if _session.xlayer_address:
+                        _state.set_active_wallet(_session.xlayer_address)
+                        settings.treasury_wallet_address = _session.xlayer_address
         except HTTPException:
             pass  # onchainos not available
 
@@ -209,6 +213,7 @@ async def wallet_logout():
     _session.account_name = None
     _session.xlayer_address = None
     _session.evm_address = None
+    _state.set_active_wallet(None)
 
     return {"ok": True, "message": "Logged out"}
 

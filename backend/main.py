@@ -95,67 +95,6 @@ async def _ensure_default_treasury() -> None:
         log.warning("treasury_init.failed", error=str(exc)[:120])
 
 
-async def _seed_economy_data() -> None:
-    """
-    Seed realistic fee events if economy tables are empty.
-    Only runs once — skips if performance_fees already has data.
-    """
-    from db.client import get_supabase
-    import uuid
-    from datetime import datetime, timezone, timedelta
-
-    db = get_supabase()
-    if not db:
-        return
-    try:
-        existing = db.table("performance_fees").select("id").limit(1).execute()
-        if existing.data:
-            return  # already has data
-
-        now = datetime.now(timezone.utc)
-        treasury_id = _state.default_treasury_id
-
-        # Seed 4 realistic fee collection events over the past week
-        seed_events = [
-            {"profit": 2450.00, "fee": 245.00, "ago_hours": 168},
-            {"profit": 1820.00, "fee": 182.00, "ago_hours": 96},
-            {"profit": 3100.00, "fee": 310.00, "ago_hours": 48},
-            {"profit": 890.00,  "fee": 89.00,  "ago_hours": 6},
-        ]
-
-        agent_shares = {
-            "signal": 0.25, "risk": 0.20, "execution": 0.25,
-            "portfolio": 0.20, "economy": 0.10,
-        }
-
-        for event in seed_events:
-            fee_id = str(uuid.uuid4())
-            fee_row: dict = {
-                "id": fee_id,
-                "amount_usd": event["fee"],
-                "trigger_profit_usd": event["profit"],
-                "fee_pct": 10.0,
-            }
-            if treasury_id:
-                fee_row["treasury_id"] = treasury_id
-
-            db.table("performance_fees").insert(fee_row).execute()
-
-            # Distribute to agents
-            for agent_name, share in agent_shares.items():
-                db.table("fee_distributions").insert({
-                    "id": str(uuid.uuid4()),
-                    "fee_id": fee_id,
-                    "agent_name": agent_name,
-                    "amount_usd": round(event["fee"] * share, 2),
-                    "share_pct": share * 100,
-                }).execute()
-
-        log.info("economy_seed.complete", events=len(seed_events))
-    except Exception as exc:
-        log.warning("economy_seed.failed", error=str(exc)[:120])
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown lifecycle."""
@@ -166,9 +105,6 @@ async def lifespan(app: FastAPI):
 
     # Ensure default treasury row exists so agents can FK to it
     await _ensure_default_treasury()
-
-    # Seed economy data if tables are empty (runs once)
-    await _seed_economy_data()
 
     # Start agent cron loops
     await start_scheduler()

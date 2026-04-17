@@ -59,7 +59,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 animate-fade-in max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Settings</h1>
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Settings</h1>
         <p className="text-sm text-zinc-500 mt-0.5">
           Configure agent thresholds, risk limits, and API keys
         </p>
@@ -67,16 +67,16 @@ export default function SettingsPage() {
 
       {/* Agent Thresholds */}
       <div className="glass-card rounded-xl p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-zinc-300">Agent Thresholds</h2>
+        <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Agent Thresholds</h2>
         {AGENT_SETTINGS.map((field) => (
           <div key={field.key}>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">
+            <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
               {field.label}
             </label>
             <input
               type={field.type}
               defaultValue={field.value}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-vault-500 transition-colors"
+              className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-vault-500 transition-colors"
             />
             <p className="text-xs text-zinc-600 mt-1">{field.description}</p>
           </div>
@@ -86,7 +86,7 @@ export default function SettingsPage() {
       {/* API Keys */}
       <div className="glass-card rounded-xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-300">API Keys</h2>
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">API Keys</h2>
           <button
             onClick={() => setShowKeys(!showKeys)}
             className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
@@ -107,13 +107,13 @@ export default function SettingsPage() {
           { label: "Supabase URL", key: "supabase_url" },
         ].map((field) => (
           <div key={field.key}>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">
+            <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
               {field.label}
             </label>
             <input
               type={showKeys ? "text" : "password"}
               placeholder="••••••••••••••••••••"
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-vault-500 transition-colors font-mono"
+              className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-vault-500 transition-colors font-mono"
             />
           </div>
         ))}

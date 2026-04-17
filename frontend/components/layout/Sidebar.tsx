@@ -44,8 +44,8 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: Props) {
           className={clsx(
             "flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-all",
             isActive
-              ? "bg-vault-900/60 text-vault-400 border border-vault-800/50"
-              : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800"
+              ? "bg-vault-100 dark:bg-vault-900/60 text-vault-600 dark:text-vault-400 border border-vault-200 dark:border-vault-800/50"
+              : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
           )}
         >
           <Icon className="w-4 h-4 shrink-0" />
@@ -61,14 +61,14 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: Props) {
   return (
     <>
       {/* ── Desktop sidebar (hidden on mobile) ─────────────────────────── */}
-      <aside className="hidden md:flex md:w-16 lg:w-56 flex-col bg-zinc-900 border-r border-zinc-800 shrink-0">
+      <aside className="hidden md:flex md:w-16 lg:w-56 flex-col bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 shrink-0">
         {/* Logo */}
-        <div className="h-16 flex items-center px-4 border-b border-zinc-800 shrink-0">
+        <div className="h-16 flex items-center px-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-vault-500 to-vault-700 flex items-center justify-center shrink-0">
               <Activity className="w-4 h-4 text-white" />
             </div>
-            <span className="hidden lg:block text-sm font-bold text-zinc-100 vault-glow">
+            <span className="hidden lg:block text-sm font-bold text-zinc-900 dark:text-zinc-100 vault-glow">
               XVault
             </span>
           </div>
@@ -80,8 +80,8 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: Props) {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-zinc-800">
-          <p className="hidden lg:block text-xs text-zinc-600">
+        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
+          <p className="hidden lg:block text-xs text-zinc-500 dark:text-zinc-600">
             OKX X Layer · v0.1.0
           </p>
         </div>
@@ -90,23 +90,23 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: Props) {
       {/* ── Mobile drawer (off-canvas, z-30, above backdrop z-20) ──────── */}
       <aside
         className={clsx(
-          "fixed inset-y-0 left-0 z-30 w-64 flex flex-col bg-zinc-900 border-r border-zinc-800 transition-transform duration-300 ease-in-out md:hidden",
+          "fixed inset-y-0 left-0 z-30 w-64 flex flex-col bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 transition-transform duration-300 ease-in-out md:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Header with close button */}
-        <div className="h-14 flex items-center justify-between px-4 border-b border-zinc-800 shrink-0">
+        <div className="h-14 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-vault-500 to-vault-700 flex items-center justify-center">
               <Activity className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm font-bold text-zinc-100 vault-glow">
+            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 vault-glow">
               XVault
             </span>
           </div>
           <button
             onClick={onMobileClose}
-            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             aria-label="Close navigation"
           >
             <X className="w-4 h-4" />
@@ -119,8 +119,8 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: Props) {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-zinc-800">
-          <p className="text-xs text-zinc-600">OKX X Layer · v0.1.0</p>
+        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
+          <p className="text-xs text-zinc-500 dark:text-zinc-600">OKX X Layer · v0.1.0</p>
         </div>
       </aside>
     </>

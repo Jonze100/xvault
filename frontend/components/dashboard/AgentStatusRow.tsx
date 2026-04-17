@@ -61,7 +61,7 @@ export default function AgentStatusRow({ agents, loading }: Props) {
 
             {/* Info */}
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-zinc-300 capitalize truncate">
+              <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 capitalize truncate">
                 {agent.name} Agent
               </p>
               <p className="text-xs text-zinc-600 capitalize">{agent.status}</p>

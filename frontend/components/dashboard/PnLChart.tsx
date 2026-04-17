@@ -34,8 +34,8 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
 
   return (
     <div className="glass-card rounded-lg p-3 text-xs shadow-xl">
-      <p className="text-zinc-400 mb-1">{label}</p>
-      <p className="font-semibold text-zinc-100">
+      <p className="text-zinc-500 dark:text-zinc-400 mb-1">{label}</p>
+      <p className="font-semibold text-zinc-800 dark:text-zinc-100">
         ${value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
       </p>
       <p className={pnl >= 0 ? "text-emerald-400" : "text-red-400"}>

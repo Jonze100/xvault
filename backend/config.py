@@ -69,9 +69,15 @@ class Settings(BaseSettings):
     service_provider_address: str = ""
 
     # Agent Intervals
-    signal_agent_interval: int = 300       # 5 min
-    portfolio_agent_interval: int = 300    # 5 min
-    economy_agent_interval: int = 900      # 15 min
+    signal_agent_interval: int = 3600      # 60 min
+    portfolio_agent_interval: int = 3600   # 60 min
+    economy_agent_interval: int = 7200     # 120 min
+
+    # Claude model for agent reasoning
+    claude_model: str = "claude-sonnet-4-6"
+
+    # Daily spend cap — pause Claude reasoning if exceeded, fall back to OKX scoring
+    daily_spend_cap_usd: float = 1.00
 
     # Risk Thresholds
     max_trade_size_usd: float = 10_000

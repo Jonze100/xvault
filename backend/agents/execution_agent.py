@@ -195,11 +195,21 @@ Respond ONLY with valid JSON:
   "slippage_tolerance": 0.005
 }}"""
 
+        from agents.spend_tracker import is_budget_exceeded, record_usage
+        if is_budget_exceeded():
+            return {
+                "type": "swap",
+                "reasoning": "Budget cap reached — defaulting to swap",
+                "target_protocol": "okx_dex",
+                "slippage_tolerance": 0.005,
+            }
+
         response = await self.client.messages.create(
-            model="claude-sonnet-4-6",
+            model=settings.claude_model,
             max_tokens=256,
             messages=[{"role": "user", "content": prompt}],
         )
+        record_usage(response.usage.input_tokens, response.usage.output_tokens)
 
         raw = response.content[0].text.strip()
         if raw.startswith("```"):
@@ -267,7 +277,7 @@ Respond ONLY with valid JSON:
         )
 
         # Use agentic wallet (logged in via onchainos wallet login) for execution
-        wallet_addr = settings.execution_agent_wallet_address or settings.treasury_wallet_address
+        wallet_addr = _state.get_active_wallet() or settings.execution_agent_wallet_address or settings.treasury_wallet_address
         if not wallet_addr:
             log.warning("execution_agent.swap.no_wallet_configured")
             return self._mock_swap_result(signal, assessment)
@@ -342,7 +352,7 @@ Respond ONLY with valid JSON:
 
         log.info("execution_agent.defi_invest", token=token, amount_usd=amount_usd)
 
-        wallet_addr = settings.execution_agent_wallet_address or settings.treasury_wallet_address
+        wallet_addr = _state.get_active_wallet() or settings.execution_agent_wallet_address or settings.treasury_wallet_address
         if not wallet_addr:
             log.warning("execution_agent.defi_invest.no_wallet_configured")
             return self._mock_invest_result(signal, assessment, strategy)

@@ -15,7 +15,7 @@ export default function AgentsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Agents</h1>
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Agents</h1>
         <p className="text-sm text-zinc-500 mt-0.5">
           Five autonomous agents with dedicated agentic wallets on OKX X Layer
         </p>
@@ -44,14 +44,14 @@ export default function AgentsPage() {
       {/* Economy Section */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="glass-card rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-zinc-300 mb-4">
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4">
             Agent Earnings (x402)
           </h2>
           <AgentEarningsChart />
         </div>
 
         <div className="glass-card rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-zinc-300 mb-4">
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4">
             OKX Skill Usage
           </h2>
           <SkillsTable />

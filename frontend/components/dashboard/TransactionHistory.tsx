@@ -59,7 +59,7 @@ export default function TransactionHistory({ transactions }: Props) {
                 <span className="text-base">{TYPE_ICONS[tx.type] ?? "🔸"}</span>
               </td>
               <td className="px-4 py-3">
-                <p className="text-zinc-200">
+                <p className="text-zinc-800 dark:text-zinc-200">
                   {tx.from_token} → {tx.to_token}
                 </p>
                 <a

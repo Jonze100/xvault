@@ -116,31 +116,31 @@ export default function AgentCard({ agent, onRefresh }: Props) {
       </div>
 
       {/* Wallet */}
-      <div className="bg-zinc-900/60 rounded-lg p-3 mb-3">
-        <p className="text-xs text-zinc-600 mb-1">Agentic Wallet</p>
+      <div className="bg-zinc-100 dark:bg-zinc-900/60 rounded-lg p-3 mb-3">
+        <p className="text-xs text-zinc-500 dark:text-zinc-600 mb-1">Agentic Wallet</p>
         <div className="flex items-center justify-between">
-          <p className="text-xs font-mono text-zinc-400">
+          <p className="text-xs font-mono text-zinc-600 dark:text-zinc-400">
             {agent.wallet.address.slice(0, 6)}…{agent.wallet.address.slice(-4)}
           </p>
           <a
             href={`https://www.okx.com/explorer/xlayer/address/${agent.wallet.address}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-zinc-600 hover:text-zinc-400 transition-colors"
+            className="text-zinc-400 dark:text-zinc-600 hover:text-zinc-600 dark:hover:text-zinc-400 transition-colors"
           >
             <ExternalLink className="w-3 h-3" />
           </a>
         </div>
         <div className="flex justify-between mt-2">
           <div>
-            <p className="text-xs text-zinc-600">Balance</p>
-            <p className="text-sm font-semibold text-zinc-200">
+            <p className="text-xs text-zinc-500 dark:text-zinc-600">Balance</p>
+            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
               ${agent.wallet.balance_usd.toFixed(2)}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-zinc-600">Earned</p>
-            <p className="text-sm font-semibold text-emerald-400">
+            <p className="text-xs text-zinc-500 dark:text-zinc-600">Earned</p>
+            <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
               +${agent.wallet.earnings_total_usd.toFixed(2)}
             </p>
           </div>
@@ -150,18 +150,18 @@ export default function AgentCard({ agent, onRefresh }: Props) {
       {/* Stats */}
       <div className="flex justify-between text-xs mb-4">
         <div>
-          <p className="text-zinc-600">Decisions Today</p>
-          <p className="text-zinc-300 font-semibold">{agent.decisions_today}</p>
+          <p className="text-zinc-500 dark:text-zinc-600">Decisions Today</p>
+          <p className="text-zinc-800 dark:text-zinc-300 font-semibold">{agent.decisions_today}</p>
         </div>
         <div>
-          <p className="text-zinc-600">Success Rate</p>
-          <p className="text-zinc-300 font-semibold">
+          <p className="text-zinc-500 dark:text-zinc-600">Success Rate</p>
+          <p className="text-zinc-800 dark:text-zinc-300 font-semibold">
             {(agent.success_rate * 100).toFixed(0)}%
           </p>
         </div>
         <div>
-          <p className="text-zinc-600">Loop</p>
-          <p className="text-zinc-300 font-semibold">
+          <p className="text-zinc-500 dark:text-zinc-600">Loop</p>
+          <p className="text-zinc-800 dark:text-zinc-300 font-semibold">
             {agent.loop_interval_seconds / 60}m
           </p>
         </div>
@@ -172,7 +172,7 @@ export default function AgentCard({ agent, onRefresh }: Props) {
         {config.skills.map((skill) => (
           <span
             key={skill}
-            className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 font-mono"
+            className="text-xs px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-500 font-mono"
           >
             {skill}
           </span>
@@ -181,7 +181,7 @@ export default function AgentCard({ agent, onRefresh }: Props) {
 
       {/* Action error */}
       {actionError && (
-        <div className="flex items-center gap-1.5 text-xs text-red-400 mb-3 p-2 bg-red-900/20 rounded-lg border border-red-800/30">
+        <div className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 mb-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800/30">
           <AlertCircle className="w-3 h-3 shrink-0" />
           {actionError}
         </div>
@@ -192,7 +192,7 @@ export default function AgentCard({ agent, onRefresh }: Props) {
         <button
           onClick={handleTogglePause}
           disabled={isToggling}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-700 text-xs text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors disabled:opacity-50"
         >
           {agent.status === "paused" ? (
             <><Play className="w-3 h-3" /> Resume</>
@@ -203,7 +203,7 @@ export default function AgentCard({ agent, onRefresh }: Props) {
         <button
           onClick={handleTriggerRun}
           disabled={isTriggering}
-          className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-vault-900/50 border border-vault-800/50 text-xs text-vault-400 hover:bg-vault-900 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-vault-50 dark:bg-vault-900/50 border border-vault-200 dark:border-vault-800/50 text-xs text-vault-600 dark:text-vault-400 hover:bg-vault-100 dark:hover:bg-vault-900 transition-colors disabled:opacity-50"
         >
           <Zap className="w-3 h-3" />
           Run

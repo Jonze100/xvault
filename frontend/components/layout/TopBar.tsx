@@ -5,7 +5,7 @@ import { useTheme } from "next-themes";
 import { useWSConnection } from "@/hooks/useWSConnection";
 import {
   Wifi, WifiOff, ExternalLink, Sun, Moon, Menu, Wallet, LogOut,
-  Mail, Shield, Loader2, CheckCircle2, X,
+  Mail, Shield, Loader2, CheckCircle2, X, Copy, Check,
 } from "lucide-react";
 
 interface Props {
@@ -43,28 +43,6 @@ function getProvider(): { provider: EIP1193Provider; name: string } | null {
 
 function useWalletConnect() {
   const [wallet, setWallet] = useState<WalletState>({ status: "idle" });
-
-  useEffect(() => {
-    const detected = getProvider();
-    if (!detected) return;
-    const { provider } = detected;
-    provider
-      .request({ method: "eth_accounts" })
-      .then((raw) => {
-        const accounts = raw as string[];
-        if (accounts.length > 0)
-          setWallet({ status: "connected", address: accounts[0], providerName: detected.name });
-      })
-      .catch(() => {});
-
-    const handler = (...args: unknown[]) => {
-      const accounts = args[0] as string[];
-      if (accounts.length === 0) setWallet({ status: "idle" });
-      else setWallet({ status: "connected", address: accounts[0], providerName: detected.name });
-    };
-    provider.on("accountsChanged", handler);
-    return () => provider.removeListener("accountsChanged", handler);
-  }, []);
 
   const connect = useCallback(async () => {
     const detected = getProvider();
@@ -364,6 +342,7 @@ export default function TopBar({ onMenuClick }: Props) {
   const [mounted, setMounted] = useState(false);
   const [agenticModal, setAgenticModal] = useState<AgenticWalletState>({ step: "closed" });
   const [agenticWallet, setAgenticWallet] = useState<{ address: string; email: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
@@ -446,11 +425,11 @@ export default function TopBar({ onMenuClick }: Props) {
               {connectedWallet ? (
                 <div className="flex items-center gap-1.5">
                   <div
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-vault-900/40 border border-vault-700/40 text-xs text-vault-400 font-mono cursor-default"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-vault-100 dark:bg-vault-900/40 border border-vault-200 dark:border-vault-700/40 text-xs text-vault-700 dark:text-vault-400 font-mono cursor-default"
                     title={connectedWallet.address}
                   >
                     {connectedWallet.provider === "Agentic" ? (
-                      <Shield className="w-3 h-3 shrink-0 text-vault-400" />
+                      <Shield className="w-3 h-3 shrink-0 text-vault-600 dark:text-vault-400" />
                     ) : (
                       <Wallet className="w-3 h-3 shrink-0" />
                     )}
@@ -460,9 +439,20 @@ export default function TopBar({ onMenuClick }: Props) {
                     </span>
                   </div>
                   <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(connectedWallet.address);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    title="Copy address"
+                    className="p-1.5 rounded-lg text-zinc-500 hover:text-vault-500 hover:bg-vault-100 dark:hover:bg-vault-900/30 transition-colors"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
                     onClick={agenticWallet ? handleAgenticDisconnect : disconnectBrowser}
                     title="Disconnect wallet"
-                    className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                    className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                   </button>

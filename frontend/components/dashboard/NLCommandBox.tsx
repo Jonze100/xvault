@@ -61,7 +61,7 @@ export default function NLCommandBox() {
           <button
             key={s}
             onClick={() => handleSubmit(s)}
-            className="text-xs px-2 py-1 rounded-md bg-zinc-800 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 transition-colors"
+            className="text-xs px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
           >
             {s}
           </button>
@@ -75,7 +75,7 @@ export default function NLCommandBox() {
           value={command}
           onChange={(e) => setCommand(e.target.value)}
           placeholder="Tell the agents what to do..."
-          className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-vault-500 transition-colors"
+          className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-vault-500 transition-colors"
           disabled={isLoading}
         />
         <button
@@ -96,8 +96,8 @@ export default function NLCommandBox() {
         <div
           className={`mt-2 p-2.5 rounded-lg text-xs border ${
             result.success
-              ? "bg-emerald-900/20 border-emerald-800/30 text-emerald-400"
-              : "bg-red-900/20 border-red-800/30 text-red-400"
+              ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30 text-emerald-700 dark:text-emerald-400"
+              : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30 text-red-700 dark:text-red-400"
           }`}
         >
           <span className="font-medium capitalize">[{result.agent}]</span>{" "}

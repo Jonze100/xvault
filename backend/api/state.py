@@ -36,7 +36,7 @@ _SKILLS: list[list[str]] = [
     ["x402"],
 ]
 
-_INTERVALS = [300, 0, 0, 300, 900]
+_INTERVALS = [3600, 0, 0, 3600, 7200]
 
 
 def _wallet_address(i: int) -> str:
@@ -97,3 +97,20 @@ def increment_decisions(name: str) -> None:
 # Default treasury UUID — set at startup by _ensure_default_treasury() in main.py.
 # Agents include this as treasury_id when persisting snapshots/transactions.
 default_treasury_id: str | None = None
+
+# Active wallet address — set by wallet login, used by all agents
+active_wallet_address: str | None = None
+
+
+def set_active_wallet(address: str | None) -> None:
+    """Update all agent wallet addresses to use the active session wallet."""
+    global active_wallet_address
+    active_wallet_address = address
+    if address:
+        for name in _NAMES:
+            agent_states[name]["wallet"]["address"] = address
+
+
+def get_active_wallet() -> str | None:
+    """Return the active wallet address from the logged-in session."""
+    return active_wallet_address

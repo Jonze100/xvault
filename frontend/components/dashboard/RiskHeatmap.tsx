@@ -27,7 +27,7 @@ export default function RiskHeatmap() {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {Array(6).fill(0).map((_, i) => (
-          <div key={i} className="h-20 rounded-lg bg-zinc-800 animate-pulse" />
+          <div key={i} className="h-20 rounded-lg bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
         ))}
       </div>
     );

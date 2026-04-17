@@ -356,18 +356,23 @@ Respond ONLY with valid JSON:
   "max_size_usd": <float>
 }}"""
 
+        from agents.spend_tracker import is_budget_exceeded, record_usage
         try:
-            response = await self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=512,
-                messages=[{"role": "user", "content": prompt}],
-            )
-
-            raw = response.content[0].text.strip()
-            if raw.startswith("```"):
-                raw = raw.split("```")[1]
-                if raw.startswith("json"):
-                    raw = raw[4:]
+            if is_budget_exceeded():
+                log.info("risk_agent.budget_exceeded_fallback")
+                raw = ""
+            else:
+                response = await self.client.messages.create(
+                    model=settings.claude_model,
+                    max_tokens=512,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                record_usage(response.usage.input_tokens, response.usage.output_tokens)
+                raw = response.content[0].text.strip()
+                if raw.startswith("```"):
+                    raw = raw.split("```")[1]
+                    if raw.startswith("json"):
+                        raw = raw[4:]
         except Exception as e:
             log.warning("risk_agent.claude_unavailable", error=str(e))
             raw = ""

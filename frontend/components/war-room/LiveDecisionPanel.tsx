@@ -48,7 +48,7 @@ export default function LiveDecisionPanel({ decisions }: Props) {
           </div>
 
           {/* Reasoning */}
-          <p className="text-xs text-zinc-300 leading-relaxed">{d.reasoning}</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">{d.reasoning}</p>
 
           {/* Footer */}
           <div className="flex items-center justify-between mt-2">

@@ -46,7 +46,7 @@ export default function DashboardPage() {
         <MetricCard
           icon={<DollarSign className="w-4 h-4" />}
           label="Total AUM"
-          value={treasury ? `$${(treasury.total_value_usd / 1000).toFixed(1)}K` : "—"}
+          value={treasury ? (treasury.total_value_usd > 0 ? `$${(treasury.total_value_usd / 1000).toFixed(1)}K` : "$0.00") : "$0.00"}
           change={treasury?.total_pnl_24h_pct}
           loading={treasuryLoading}
           color="vault"
@@ -54,7 +54,7 @@ export default function DashboardPage() {
         <MetricCard
           icon={<TrendingUp className="w-4 h-4" />}
           label="24h PnL"
-          value={treasury ? `$${treasury.total_pnl_24h_usd.toFixed(0)}` : "—"}
+          value={treasury ? `$${treasury.total_pnl_24h_usd.toFixed(2)}` : "$0.00"}
           change={treasury?.total_pnl_24h_pct}
           loading={treasuryLoading}
           color="emerald"
@@ -62,7 +62,7 @@ export default function DashboardPage() {
         <MetricCard
           icon={<Shield className="w-4 h-4" />}
           label="Risk Score"
-          value={treasury ? `${treasury.risk_score}/100` : "—"}
+          value={treasury ? `${treasury.risk_score}/100` : "0/100"}
           loading={treasuryLoading}
           color={
             treasury && treasury.risk_score < 40 ? "emerald" :
@@ -72,11 +72,7 @@ export default function DashboardPage() {
         <MetricCard
           icon={<Zap className="w-4 h-4" />}
           label="Fees Collected"
-          value={
-            treasury
-              ? `$${treasury.performance_fees_collected_usd.toFixed(0)}`
-              : "—"
-          }
+          value={treasury ? `$${treasury.performance_fees_collected_usd.toFixed(2)}` : "$0.00"}
           loading={treasuryLoading}
           color="blue"
         />
@@ -90,7 +86,7 @@ export default function DashboardPage() {
         {/* PnL Chart — takes 2/3 width on xl */}
         <div className="xl:col-span-2 glass-card rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-zinc-300">
+            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
               Portfolio Performance
             </h2>
             <div className="flex gap-1">
@@ -114,7 +110,7 @@ export default function DashboardPage() {
 
         {/* Treasury Asset Breakdown */}
         <div className="glass-card rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-zinc-300 mb-4">
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4">
             Asset Allocation
           </h2>
           <TreasuryOverview treasury={treasury} loading={treasuryLoading} isOffline={treasuryOffline} />
@@ -124,14 +120,14 @@ export default function DashboardPage() {
       {/* Bottom Grid: Risk Heatmap + Recent Decisions */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="glass-card rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-zinc-300 mb-4">
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4">
             Risk Heatmap
           </h2>
           <RiskHeatmap />
         </div>
 
         <div className="glass-card rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-zinc-300 mb-4">
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4">
             Recent Agent Decisions
           </h2>
           <RecentDecisions />

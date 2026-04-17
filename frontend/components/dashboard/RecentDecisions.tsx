@@ -59,7 +59,7 @@ export default function RecentDecisions() {
     return (
       <div className="space-y-2">
         {Array(5).fill(0).map((_, i) => (
-          <div key={i} className="h-14 rounded-lg bg-zinc-800/50 animate-pulse" />
+          <div key={i} className="h-14 rounded-lg bg-zinc-200 dark:bg-zinc-800/50 animate-pulse" />
         ))}
       </div>
     );
@@ -86,7 +86,7 @@ export default function RecentDecisions() {
         decisions.map((d) => (
           <div
             key={d.id}
-            className="flex gap-2.5 p-2.5 rounded-lg bg-zinc-900/50 hover:bg-zinc-900 transition-colors message-bubble"
+            className="flex gap-2.5 p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors message-bubble"
           >
             {/* Agent Badge */}
             <span
@@ -101,7 +101,7 @@ export default function RecentDecisions() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm">{TYPE_ICONS[d.type] ?? "🔸"}</span>
-                <p className="text-xs text-zinc-200 truncate">{d.reasoning}</p>
+                <p className="text-xs text-zinc-800 dark:text-zinc-200 truncate">{d.reasoning}</p>
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-xs text-zinc-600">

@@ -23,9 +23,9 @@ export default function TreasuryOverview({ treasury, loading, isOffline }: Props
   if (loading) {
     return (
       <div className="space-y-2">
-        <div className="h-36 bg-zinc-800 rounded-lg animate-pulse mx-auto w-36" />
+        <div className="h-36 bg-zinc-200 dark:bg-zinc-800 rounded-lg animate-pulse mx-auto w-36" />
         {Array(4).fill(0).map((_, i) => (
-          <div key={i} className="h-8 bg-zinc-800 rounded animate-pulse" />
+          <div key={i} className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
         ))}
       </div>
     );

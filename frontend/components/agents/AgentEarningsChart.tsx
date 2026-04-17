@@ -30,7 +30,7 @@ export default function AgentEarningsChart() {
   const isDark = resolvedTheme === "dark";
 
   if (isLoading) {
-    return <div className="h-48 bg-zinc-800 rounded-lg animate-pulse" />;
+    return <div className="h-48 bg-zinc-200 dark:bg-zinc-800 rounded-lg animate-pulse" />;
   }
 
   const data = Object.entries(earnings ?? {}).map(([agent, amount]) => ({

@@ -317,12 +317,13 @@ class EconomyAgent:
         """
         distributions: list[dict[str, Any]] = []
 
-        # Agent wallet addresses (configured in environment)
+        # Agent wallet addresses — prefer active session wallet
+        active = _state.get_active_wallet()
         agent_wallets = {
-            "signal":    settings.signal_agent_wallet_address,
-            "risk":      settings.risk_agent_wallet_address,
-            "execution": settings.execution_agent_wallet_address,
-            "portfolio": settings.portfolio_agent_wallet_address,
+            "signal":    active or settings.signal_agent_wallet_address,
+            "risk":      active or settings.risk_agent_wallet_address,
+            "execution": active or settings.execution_agent_wallet_address,
+            "portfolio": active or settings.portfolio_agent_wallet_address,
         }
 
         for agent_name, split_pct in FEE_SPLITS.items():
@@ -464,11 +465,12 @@ class EconomyAgent:
             cost=cost_usd,
         )
 
+        active = _state.get_active_wallet()
         agent_wallets = {
-            "signal":    settings.signal_agent_wallet_address,
-            "risk":      settings.risk_agent_wallet_address,
-            "execution": settings.execution_agent_wallet_address,
-            "portfolio": settings.portfolio_agent_wallet_address,
+            "signal":    active or settings.signal_agent_wallet_address,
+            "risk":      active or settings.risk_agent_wallet_address,
+            "execution": active or settings.execution_agent_wallet_address,
+            "portfolio": active or settings.portfolio_agent_wallet_address,
         }
         agent_wallet = agent_wallets.get(agent_name)
         service_provider = getattr(settings, "service_provider_address", None)

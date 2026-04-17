@@ -25,10 +25,10 @@ const AGENT_EMOJIS: Record<AgentName, string> = {
 };
 
 const TYPE_STYLES: Record<string, string> = {
-  signal:    "border-blue-800/30",
-  request:   "border-zinc-700/30",
-  response:  "border-emerald-800/30",
-  broadcast: "border-violet-800/30",
+  signal:    "border-blue-300/30 dark:border-blue-800/30",
+  request:   "border-zinc-300/30 dark:border-zinc-700/30",
+  response:  "border-emerald-300/30 dark:border-emerald-800/30",
+  broadcast: "border-violet-300/30 dark:border-violet-800/30",
 };
 
 interface Props {
@@ -51,7 +51,7 @@ export default function MessageFeed({ messages }: Props) {
           key={msg.id}
           className={clsx(
             "flex gap-2.5 p-2 rounded-lg border message-bubble",
-            TYPE_STYLES[msg.type] ?? "border-zinc-800/30",
+            TYPE_STYLES[msg.type] ?? "border-zinc-300/30 dark:border-zinc-800/30",
             "bg-white dark:bg-zinc-900/40"
           )}
         >
@@ -68,7 +68,7 @@ export default function MessageFeed({ messages }: Props) {
           {/* Content */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold capitalize text-zinc-300">
+              <span className="font-semibold capitalize text-zinc-700 dark:text-zinc-300">
                 {msg.from_agent}
               </span>
               <span className="text-zinc-700">→</span>
@@ -78,16 +78,16 @@ export default function MessageFeed({ messages }: Props) {
               <span
                 className={clsx(
                   "ml-auto px-1 py-0.5 rounded text-xs",
-                  msg.type === "signal"    ? "text-blue-400 bg-blue-900/20" :
-                  msg.type === "broadcast" ? "text-violet-400 bg-violet-900/20" :
-                  msg.type === "response"  ? "text-emerald-400 bg-emerald-900/20" :
-                  "text-zinc-500 bg-zinc-800"
+                  msg.type === "signal"    ? "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/20" :
+                  msg.type === "broadcast" ? "text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/20" :
+                  msg.type === "response"  ? "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/20" :
+                  "text-zinc-500 bg-zinc-200 dark:bg-zinc-800"
                 )}
               >
                 {msg.type}
               </span>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5 truncate">{msg.content}</p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5 truncate">{msg.content}</p>
           </div>
 
           {/* Timestamp */}

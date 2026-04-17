@@ -285,12 +285,33 @@ For each opportunity return JSON with these fields:
 
 Respond ONLY with a valid JSON array. Be conservative — Risk Agent will vet your picks."""
 
+        # Check daily spend cap — fall back to direct OKX scoring if exceeded
+        from agents.spend_tracker import is_budget_exceeded, record_usage
+        if is_budget_exceeded():
+            log.info("signal_agent.budget_exceeded_fallback")
+            opportunities = [
+                {
+                    "token": s["token"],
+                    "action": "buy" if s["direction"] == "long" else "sell",
+                    "confidence": s["strength"],
+                    "reasoning": f"Smart money signal: {s['token']} {s['direction']} (strength {s['strength']:.2f}, vol ${s['volume_usd']:.0f})",
+                    "estimated_size_pct": min(5.0, s["strength"] * 10),
+                }
+                for s in signals
+                if s["strength"] >= 0.6
+            ]
+            return opportunities
+
         try:
             response = await self.client.messages.create(
-                model="claude-sonnet-4-6",
+                model=settings.claude_model,
                 max_tokens=1024,
                 messages=[{"role": "user", "content": prompt}],
             )
+
+            # Track spend
+            usage = response.usage
+            record_usage(usage.input_tokens, usage.output_tokens)
 
             raw = response.content[0].text.strip()
             # Strip possible markdown code fences

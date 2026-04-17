@@ -21,11 +21,11 @@ const SKILLS_DATA = [
 ];
 
 const AGENT_COLORS: Record<string, string> = {
-  Signal:    "text-blue-400 bg-blue-900/30",
-  Risk:      "text-amber-400 bg-amber-900/30",
-  Execution: "text-emerald-400 bg-emerald-900/30",
-  Portfolio: "text-violet-400 bg-violet-900/30",
-  Economy:   "text-rose-400 bg-rose-900/30",
+  Signal:    "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30",
+  Risk:      "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30",
+  Execution: "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30",
+  Portfolio: "text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30",
+  Economy:   "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/30",
 };
 
 export default function SkillsTable() {
@@ -33,7 +33,7 @@ export default function SkillsTable() {
     <div className="overflow-y-auto max-h-64">
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-zinc-600 border-b border-zinc-800">
+          <tr className="text-zinc-600 border-b border-zinc-200 dark:border-zinc-800">
             <th className="text-left py-2 font-medium">Agent</th>
             <th className="text-left py-2 font-medium">Skill</th>
             <th className="text-right py-2 font-medium">Calls</th>
@@ -41,7 +41,7 @@ export default function SkillsTable() {
         </thead>
         <tbody>
           {SKILLS_DATA.map((row, i) => (
-            <tr key={i} className="border-b border-zinc-800/40 hover:bg-zinc-800/20">
+            <tr key={i} className="border-b border-zinc-200/40 dark:border-zinc-800/40 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/20">
               <td className="py-1.5">
                 <span
                   className={`px-1.5 py-0.5 rounded text-xs font-medium ${AGENT_COLORS[row.agent]}`}
@@ -49,7 +49,7 @@ export default function SkillsTable() {
                   {row.agent}
                 </span>
               </td>
-              <td className="py-1.5 font-mono text-zinc-400">{row.skill}</td>
+              <td className="py-1.5 font-mono text-zinc-600 dark:text-zinc-400">{row.skill}</td>
               <td className="py-1.5 text-right text-zinc-500">{row.calls}</td>
             </tr>
           ))}

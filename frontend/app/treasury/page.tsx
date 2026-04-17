@@ -42,7 +42,7 @@ export default function TreasuryPage() {
           <div className="flex flex-wrap gap-8">
             <div>
               <p className="text-xs text-zinc-500">Total Value</p>
-              <p className="text-3xl font-bold text-vault-400 mt-1">
+              <p className="text-3xl font-bold text-vault-600 dark:text-vault-400 mt-1">
                 ${treasury.total_value_usd.toLocaleString("en-US", { maximumFractionDigits: 0 })}
               </p>
             </div>
@@ -71,7 +71,7 @@ export default function TreasuryPage() {
             </div>
             <div>
               <p className="text-xs text-zinc-500">Positions</p>
-              <p className="text-xl font-semibold text-zinc-200 mt-1">
+              <p className="text-xl font-semibold text-zinc-800 dark:text-zinc-200 mt-1">
                 {treasury.assets.length}
               </p>
             </div>

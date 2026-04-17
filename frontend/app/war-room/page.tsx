@@ -80,14 +80,14 @@ export default function WarRoomPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 glass-card rounded-xl p-4 h-[420px] xl:h-[500px]">
+        <div className="xl:col-span-2 glass-card rounded-xl p-4 max-h-[500px]">
           <h2 className="text-sm font-semibold text-zinc-400 mb-3">
             Agent Network
           </h2>
           <AgentCommsGraph agents={agents ?? []} messages={messages} />
         </div>
 
-        <div className="glass-card rounded-xl p-4 flex flex-col h-[420px] xl:h-[500px]">
+        <div className="glass-card rounded-xl p-4 flex flex-col max-h-[500px]">
           <h2 className="text-sm font-semibold text-zinc-400 mb-3 shrink-0">
             Live Decisions
           </h2>
@@ -97,7 +97,7 @@ export default function WarRoomPage() {
         </div>
       </div>
 
-      <div className="glass-card rounded-xl p-4 h-[400px] flex flex-col">
+      <div className="glass-card rounded-xl p-4 max-h-[500px] flex flex-col">
         <h2 className="text-sm font-semibold text-zinc-400 mb-3 shrink-0">
           Agent Message Feed
         </h2>

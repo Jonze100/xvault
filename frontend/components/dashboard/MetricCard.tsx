@@ -38,21 +38,21 @@ export default function MetricCard({
   if (loading) {
     return (
       <div className="glass-card rounded-xl p-4 animate-pulse">
-        <div className="h-4 bg-zinc-800 rounded w-20 mb-3" />
-        <div className="h-7 bg-zinc-800 rounded w-28" />
+        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 mb-3" />
+        <div className="h-7 bg-zinc-200 dark:bg-zinc-800 rounded w-28" />
       </div>
     );
   }
 
   return (
-    <div className="glass-card rounded-xl p-4 hover:border-zinc-700 transition-colors">
+    <div className="glass-card rounded-xl p-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-zinc-500">{label}</p>
         <div className={clsx("p-1.5 rounded-md", colorClasses)}>
           {icon}
         </div>
       </div>
-      <p className="text-xl font-bold text-zinc-100">{value}</p>
+      <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{value}</p>
       {change !== undefined && (
         <div
           className={clsx(

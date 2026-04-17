@@ -77,6 +77,9 @@ async def _run_onchainos(*args: str, timeout: int = 30) -> dict[str, Any] | None
         raise HTTPException(status_code=504, detail="onchainos timed out")
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=502, detail=f"Invalid onchainos response: {exc}")
+    except FileNotFoundError:
+        log.warning("onchainos.not_found", cmd=cmd)
+        raise HTTPException(status_code=503, detail="onchainos CLI not available")
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────

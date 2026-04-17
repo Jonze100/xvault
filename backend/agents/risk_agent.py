@@ -259,13 +259,14 @@ class RiskAgent:
                 "raw": data,
             }
 
-        # Fallback when CLI unavailable or token not on XLayer yet
-        log.info("risk_agent.security.fallback", token=token)
+        # Fallback when CLI unavailable — be conservative, reject with low score
+        log.error("risk_agent.security.REAL_CLI_FAILED", token=token)
         return {
-            "score": 88,
-            "flags": [],
-            "is_verified": True,
-            "risk_level": 1,
+            "score": 0,
+            "flags": ["security_scan_failed"],
+            "is_verified": False,
+            "risk_level": 3,
+            "simulated": True,
         }
 
     async def _check_audit_log(self, token: str, contract: str) -> dict[str, Any]:

@@ -81,7 +81,7 @@ class XVaultOrchestrator:
             self._route_after_risk,
             {
                 "execute":       "execute",
-                "scan":          "scan",      # all rejected → re-scan next cycle
+                "monitor":       "monitor",   # all rejected → still update portfolio, then END
                 "handle_error":  "handle_error",
             },
         )
@@ -209,7 +209,7 @@ class XVaultOrchestrator:
             return "handle_error"
         if state.approved_signals:
             return "execute"
-        return "scan"  # nothing approved, wait for next cycle
+        return "monitor"  # nothing approved → update portfolio and finish
 
     def _route_after_monitor(self, state: OrchestratorState) -> str:
         if state.detected_profit_usd >= 500:

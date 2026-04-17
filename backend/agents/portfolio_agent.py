@@ -197,20 +197,24 @@ class PortfolioAgent:
         )
 
         if result:
-            # Real API shape: { "ok": true, "data": { "details": [...], "totalValueUsd": "..." } }
-            # or { "ok": true, "data": [ ... ] }
+            # Real API shape: { "ok": true, "data": [ { "tokenAssets": [...] } ] }
+            # or { "ok": true, "data": { "details": [...] } }
             raw_data = result.get("data", result) if isinstance(result, dict) else result
-            if isinstance(raw_data, dict):
-                # Nested: data.details[0].tokenAssets or data.tokenAssets
+            assets = []
+            if isinstance(raw_data, list):
+                # data is array of chain groups, each with tokenAssets
+                for group in raw_data:
+                    if isinstance(group, dict) and "tokenAssets" in group:
+                        assets.extend(group["tokenAssets"])
+                    elif isinstance(group, dict) and "symbol" in group:
+                        assets.append(group)  # flat list of assets
+            elif isinstance(raw_data, dict):
                 details = raw_data.get("details", [])
                 if details and isinstance(details, list):
-                    assets = details[0].get("tokenAssets", [])
+                    for d in details:
+                        assets.extend(d.get("tokenAssets", []))
                 else:
                     assets = raw_data.get("tokenAssets", [])
-            elif isinstance(raw_data, list):
-                assets = raw_data
-            else:
-                assets = []
             return [
                 {
                     "symbol": a.get("symbol", "UNKNOWN"),
@@ -225,8 +229,9 @@ class PortfolioAgent:
                    and float(a.get("balance", 0)) > 0
             ]
 
-        log.info("portfolio_agent.wallet.fallback")
-        return self._mock_wallet_positions()
+        # No fallback to fake data — return empty so the UI shows real state
+        log.error("portfolio_agent.wallet.REAL_CLI_FAILED — returning empty positions")
+        return []
 
     async def _fetch_pnl_overview(self) -> dict[str, Any]:
         """

@@ -402,31 +402,28 @@ Respond ONLY with valid JSON:
     # ─── helpers ────────────────────────────────────────────────────────────
 
     def _mock_swap_result(self, signal: dict, assessment: dict) -> dict[str, Any]:
-        """Return a deterministic mock result when CLI is unavailable."""
-        amount_in = assessment.get("max_size_usd", 1000)
+        """Return a FAILED result when CLI is unavailable — never fake success."""
+        log.error("execution_agent.swap.REAL_CLI_FAILED", token=signal["token"])
         return {
-            "success": True,
+            "success": False,
             "type": "swap",
-            "tx_hash": f"0x{uuid.uuid4().hex}",
+            "error": "onchainos CLI swap failed — no real transaction executed",
+            "simulated": True,
             "from_token": "USDC",
             "to_token": signal["token"],
-            "amount_in": amount_in,
-            "amount_out": amount_in / 48.0,
-            "gas_used": "185000",
             "chain": "xlayer",
         }
 
     def _mock_invest_result(
         self, signal: dict, assessment: dict, strategy: dict
     ) -> dict[str, Any]:
-        """Return a deterministic mock result when CLI is unavailable."""
+        """Return a FAILED result when CLI is unavailable — never fake success."""
+        log.error("execution_agent.invest.REAL_CLI_FAILED", token=signal["token"])
         return {
-            "success": True,
+            "success": False,
             "type": "invest",
-            "tx_hash": f"0x{uuid.uuid4().hex}",
-            "protocol": strategy.get("target_protocol", "aave_v3"),
-            "amount_deposited": assessment.get("max_size_usd", 0),
-            "apy_estimate": 0.085,
+            "error": "onchainos CLI defi invest failed — no real transaction executed",
+            "simulated": True,
             "chain": "xlayer",
         }
 

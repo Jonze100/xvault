@@ -198,12 +198,9 @@ class SignalAgent:
                 for s in entries
             ]
 
-        # Fallback mock when CLI unavailable
-        log.info("signal_agent.ml_signals.fallback")
-        return [
-            {"token": "OKB",  "direction": "long",  "strength": 0.73, "volume_usd": 45000, "source": "okx-dex-signal"},
-            {"token": "USDC", "direction": "long",  "strength": 0.61, "volume_usd": 22000, "source": "okx-dex-signal"},
-        ]
+        # No fallback — if CLI fails, return empty so we don't act on fake signals
+        log.error("signal_agent.ml_signals.REAL_CLI_FAILED — returning empty, no fake signals")
+        return []
 
     async def _fetch_market_data(self) -> dict[str, Any]:
         """
@@ -248,13 +245,8 @@ class SignalAgent:
                     pass
 
         if not market:
-            # Fallback prices when CLI unavailable
-            log.info("signal_agent.market_data.fallback")
-            market = {
-                "OKB":  {"price": 48.0,    "contract": ""},
-                "ETH":  {"price": 3200.0,  "contract": XLAYER_TOKENS["ETH"]},
-                "USDC": {"price": 1.0,     "contract": XLAYER_TOKENS["USDC"]},
-            }
+            # No fake prices — log error so we know the CLI failed
+            log.error("signal_agent.market_data.REAL_CLI_FAILED — no price data available")
 
         return market
 
@@ -297,8 +289,8 @@ Respond ONLY with a valid JSON array. Be conservative — Risk Agent will vet yo
                     "reasoning": f"Smart money signal: {s['token']} {s['direction']} (strength {s['strength']:.2f}, vol ${s['volume_usd']:.0f})",
                     "estimated_size_pct": min(5.0, s["strength"] * 10),
                 }
-                for s in signals
-                if s["strength"] >= 0.6
+                for s in ml_signals
+                if s.get("strength", 0) >= 0.6
             ]
             return opportunities
 

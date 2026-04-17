@@ -387,11 +387,13 @@ class EconomyAgent:
     # ─── helpers ────────────────────────────────────────────────────────────
 
     def _mock_x402_result(self, amount_usd: float, to: str) -> dict[str, Any]:
-        """Return a mock x402 payment result when CLI/wallet is unavailable."""
+        """Return a FAILED result when CLI/wallet is unavailable — never fake success."""
+        log.error("economy_agent.x402.REAL_CLI_FAILED", amount=amount_usd, to=to)
         return {
-            "success": True,
+            "success": False,
             "payment_proof": {},
-            "tx_hash": f"0x{uuid.uuid4().hex}",
+            "error": "onchainos CLI x402 payment failed — no real transaction executed",
+            "simulated": True,
             "amount_usd": amount_usd,
             "to": to,
             "collected_at": datetime.now(timezone.utc).isoformat(),

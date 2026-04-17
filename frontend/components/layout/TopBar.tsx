@@ -343,6 +343,7 @@ export default function TopBar({ onMenuClick }: Props) {
   const [agenticModal, setAgenticModal] = useState<AgenticWalletState>({ step: "closed" });
   const [agenticWallet, setAgenticWallet] = useState<{ address: string; email: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<{ totalUsd: string; tokens: Array<{ symbol: string; balance: string; tokenPrice: string }> } | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -357,6 +358,27 @@ export default function TopBar({ onMenuClick }: Props) {
       })
       .catch(() => {});
   }, []);
+
+  // Fetch wallet balance when agentic wallet is connected
+  useEffect(() => {
+    if (!agenticWallet) { setWalletBalance(null); return; }
+    const fetchBalance = () => {
+      fetch(`${API}/api/wallet/balance`)
+        .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+        .then((data) => {
+          const tokens = (data.tokens || []).map((t: Record<string, string>) => ({
+            symbol: t.symbol || "?",
+            balance: t.balance || "0",
+            tokenPrice: t.tokenPrice || "0",
+          }));
+          setWalletBalance({ totalUsd: data.total_value_usd || "0", tokens });
+        })
+        .catch(() => {});
+    };
+    fetchBalance();
+    const interval = setInterval(fetchBalance, 30_000);
+    return () => clearInterval(interval);
+  }, [agenticWallet]);
 
   const handleAgenticConnected = useCallback((address: string, email: string) => {
     setAgenticWallet({ address, email });
@@ -438,6 +460,25 @@ export default function TopBar({ onMenuClick }: Props) {
                       · {connectedWallet.provider}
                     </span>
                   </div>
+                  {/* Wallet balance display */}
+                  {walletBalance && walletBalance.tokens.length > 0 && (
+                    <div className="hidden sm:flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
+                      {walletBalance.tokens
+                        .filter((t) => parseFloat(t.balance) > 0)
+                        .slice(0, 3)
+                        .map((t, i) => (
+                          <span key={t.symbol} className="flex items-center gap-0.5">
+                            {i > 0 && <span className="text-zinc-400 dark:text-zinc-600 mx-0.5">|</span>}
+                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                              {parseFloat(t.balance) < 1000
+                                ? parseFloat(t.balance).toFixed(2)
+                                : `${(parseFloat(t.balance) / 1000).toFixed(1)}K`}
+                            </span>
+                            <span className="text-zinc-500">{t.symbol}</span>
+                          </span>
+                        ))}
+                    </div>
+                  )}
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(connectedWallet.address);

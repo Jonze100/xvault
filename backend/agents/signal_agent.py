@@ -176,24 +176,26 @@ class SignalAgent:
         result = await self._run_onchainos(
             "signal", "list",
             "--chain", "xlayer",
-            "--wallet-type", "1,2,3",
-            "--min-amount-usd", "10000",   # only signals with >$10k volume
         )
 
         if result:
             # Normalise to internal signal format
+            # Real API shape: { "ok": true, "data": [ { "token": { "symbol": ..., "tokenAddress": ... }, "amountUsd": ..., "triggerWalletCount": ..., "walletType": ... } ] }
+            entries = result if isinstance(result, list) else result.get("data", [])
             return [
                 {
-                    "token": s.get("tokenSymbol", "UNKNOWN"),
-                    "contract": s.get("tokenContractAddress", ""),
-                    "direction": "long" if s.get("buySellType") == "buy" else "short",
-                    "strength": min(1.0, int(s.get("addressCount", 1)) / 20),
-                    "address_count": s.get("addressCount", 0),
-                    "volume_usd": float(s.get("amount", 0)),
+                    "token": s.get("token", {}).get("symbol", s.get("tokenSymbol", "UNKNOWN")),
+                    "contract": s.get("token", {}).get("tokenAddress", s.get("tokenContractAddress", "")),
+                    "direction": "long",  # signal list = buy-side smart money activity
+                    "strength": min(1.0, int(s.get("triggerWalletCount", s.get("addressCount", 1))) / 20),
+                    "address_count": int(s.get("triggerWalletCount", s.get("addressCount", 0))),
+                    "volume_usd": float(s.get("amountUsd", s.get("amount", 0))),
                     "source": "okx-dex-signal",
                     "wallet_type": s.get("walletType", "1"),
+                    "market_cap_usd": float(s.get("token", {}).get("marketCapUsd", 0)),
+                    "holders": int(s.get("token", {}).get("holders", 0)),
                 }
-                for s in (result if isinstance(result, list) else result.get("data", []))
+                for s in entries
             ]
 
         # Fallback mock when CLI unavailable
@@ -235,11 +237,14 @@ class SignalAgent:
         for symbol, result in zip(tasks.keys(), results):
             if isinstance(result, dict):
                 try:
+                    # Real API shape: { "ok": true, "data": [ { "price": "...", "tokenContractAddress": "..." } ] }
+                    data = result.get("data", [result])
+                    entry = data[0] if isinstance(data, list) and data else result
                     market[symbol] = {
-                        "price": float(result.get("price", 0)),
-                        "contract": result.get("tokenContractAddress", ""),
+                        "price": float(entry.get("price", 0)),
+                        "contract": entry.get("tokenContractAddress", ""),
                     }
-                except (ValueError, TypeError):
+                except (ValueError, TypeError, IndexError):
                     pass
 
         if not market:
@@ -280,26 +285,42 @@ For each opportunity return JSON with these fields:
 
 Respond ONLY with a valid JSON array. Be conservative — Risk Agent will vet your picks."""
 
-        response = await self.client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-        )
-
-        raw = response.content[0].text.strip()
-        # Strip possible markdown code fences
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-
         try:
-            opportunities = json.loads(raw)
-            if not isinstance(opportunities, list):
-                opportunities = [opportunities]
-        except json.JSONDecodeError:
-            log.warning("signal_agent.claude_parse_failed", raw=raw[:200])
-            opportunities = []
+            response = await self.client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}],
+            )
+
+            raw = response.content[0].text.strip()
+            # Strip possible markdown code fences
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+
+            try:
+                opportunities = json.loads(raw)
+                if not isinstance(opportunities, list):
+                    opportunities = [opportunities]
+            except json.JSONDecodeError:
+                log.warning("signal_agent.claude_parse_failed", raw=raw[:200])
+                opportunities = []
+        except Exception as e:
+            # Gracefully handle Anthropic API errors (e.g. no credits)
+            log.warning("signal_agent.claude_unavailable", error=str(e))
+            # Fall back to scoring signals directly from ML signal strength
+            opportunities = [
+                {
+                    "token": s["token"],
+                    "action": "buy" if s["direction"] == "long" else "sell",
+                    "confidence": s["strength"],
+                    "reasoning": f"Smart money signal: {s['token']} {s['direction']} (strength {s['strength']:.2f}, vol ${s['volume_usd']:.0f})",
+                    "estimated_size_pct": min(5.0, s["strength"] * 10),
+                }
+                for s in ml_signals
+                if s.get("strength", 0) >= 0.1
+            ]
 
         return [
             {
@@ -309,7 +330,7 @@ Respond ONLY with a valid JSON array. Be conservative — Risk Agent will vet yo
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
             for opp in opportunities
-            if isinstance(opp, dict) and float(opp.get("confidence", 0)) >= 0.6
+            if isinstance(opp, dict) and float(opp.get("confidence", 0)) >= 0.1
         ]
 
     async def _log_decision(self, signal: dict) -> None:

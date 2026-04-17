@@ -35,7 +35,7 @@ export default function LiveDecisionPanel({ decisions }: Props) {
         <div
           key={d.id}
           className={clsx(
-            "p-3 rounded-lg border bg-zinc-900/40 message-bubble",
+            "p-3 rounded-lg border bg-white dark:bg-zinc-900/40 message-bubble",
             AGENT_COLORS[d.agent]
           )}
         >

@@ -216,36 +216,45 @@ class RiskAgent:
         )
 
         if result:
-            data = result[0] if isinstance(result, list) else result
+            # Real API shape: { "ok": true, "data": [ { ... } ] }
+            entries = result.get("data", [result]) if isinstance(result, dict) else result
+            data = entries[0] if isinstance(entries, list) and entries else (entries if isinstance(entries, dict) else {})
             cs = data.get("contractSecurityItems", {})
             ri = data.get("riskItems", {})
 
             flags: list[str] = []
             score = 100
-            if cs.get("isHoneypot") == "1":
+            # Real API uses booleans (isHoneypot: true) or strings ("1")
+            def _is_true(v: Any) -> bool:
+                return v is True or v == "1" or v == 1
+
+            if _is_true(data.get("isHoneypot", cs.get("isHoneypot"))):
                 flags.append("honeypot")
                 score -= 40
-            if cs.get("cannotSellAll") == "1":
+            if _is_true(cs.get("cannotSellAll")):
                 flags.append("cannot_sell")
                 score -= 30
-            if cs.get("isFakeToken") == "1":
+            if _is_true(data.get("isCounterfeit", cs.get("isFakeToken"))):
                 flags.append("fake_token")
                 score -= 20
-            if cs.get("isMintable") == "1":
+            if _is_true(data.get("isMintable", cs.get("isMintable"))):
                 flags.append("mintable")
                 score -= 10
-            if cs.get("isBlacklist") == "1":
+            if _is_true(cs.get("isBlacklist")):
                 flags.append("blacklist_function")
                 score -= 10
 
-            risk_level = int(ri.get("riskLevel", 1))
+            # Real API: riskLevel is a string like "LOW"/"MEDIUM"/"HIGH" or int 1/2/3
+            raw_risk = ri.get("riskLevel", data.get("riskLevel", "LOW"))
+            risk_level_map = {"LOW": 1, "MEDIUM": 2, "HIGH": 3}
+            risk_level = risk_level_map.get(str(raw_risk).upper(), int(raw_risk) if str(raw_risk).isdigit() else 1)
             if risk_level == 3:
                 score = min(score, 50)
 
             return {
                 "score": max(0, score),
                 "flags": flags,
-                "is_verified": cs.get("isOpenSource") == "1",
+                "is_verified": not _is_true(data.get("isNotOpenSource", cs.get("isOpenSource") == "0")),
                 "risk_level": risk_level,
                 "raw": data,
             }
@@ -280,12 +289,10 @@ class RiskAgent:
 
         Rejection rule: criticalIssues > 0 OR (highIssues > 0 AND unresolved)
         """
-        addr = contract or token
-        result = await self._run_onchainos(
-            "audit",
-            "--token", addr,
-            "--chain", "xlayer",
-        )
+        # Note: onchainos CLI does not have an "audit" subcommand.
+        # We use the security token-scan data (already fetched above) as a proxy.
+        # Set result to None so we fall through to the conservative default.
+        result = None
 
         if result:
             return {
@@ -349,17 +356,21 @@ Respond ONLY with valid JSON:
   "max_size_usd": <float>
 }}"""
 
-        response = await self.client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=512,
-            messages=[{"role": "user", "content": prompt}],
-        )
+        try:
+            response = await self.client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=512,
+                messages=[{"role": "user", "content": prompt}],
+            )
 
-        raw = response.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
+            raw = response.content[0].text.strip()
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+        except Exception as e:
+            log.warning("risk_agent.claude_unavailable", error=str(e))
+            raw = ""
 
         try:
             parsed = json.loads(raw)

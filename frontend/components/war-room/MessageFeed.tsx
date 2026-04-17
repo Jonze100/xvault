@@ -52,7 +52,7 @@ export default function MessageFeed({ messages }: Props) {
           className={clsx(
             "flex gap-2.5 p-2 rounded-lg border message-bubble",
             TYPE_STYLES[msg.type] ?? "border-zinc-800/30",
-            "bg-zinc-900/40"
+            "bg-white dark:bg-zinc-900/40"
           )}
         >
           {/* From avatar */}

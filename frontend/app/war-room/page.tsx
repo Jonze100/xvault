@@ -66,7 +66,7 @@ export default function WarRoomPage() {
     <div className="flex flex-col space-y-4 animate-fade-in">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-zinc-100">War Room</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-zinc-900 dark:text-zinc-100">War Room</h1>
           <p className="text-sm text-zinc-500 mt-0.5">
             Live agent-to-agent communication · decisions in real-time
           </p>
@@ -80,27 +80,31 @@ export default function WarRoomPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 glass-card rounded-xl p-4 min-h-[300px] md:min-h-[420px] xl:min-h-[500px]">
+        <div className="xl:col-span-2 glass-card rounded-xl p-4 h-[420px] xl:h-[500px]">
           <h2 className="text-sm font-semibold text-zinc-400 mb-3">
             Agent Network
           </h2>
           <AgentCommsGraph agents={agents ?? []} messages={messages} />
         </div>
 
-        <div className="glass-card rounded-xl p-4 flex flex-col min-h-[300px] md:min-h-[420px] xl:min-h-[500px]">
-          <h2 className="text-sm font-semibold text-zinc-400 mb-3">
+        <div className="glass-card rounded-xl p-4 flex flex-col h-[420px] xl:h-[500px]">
+          <h2 className="text-sm font-semibold text-zinc-400 mb-3 shrink-0">
             Live Decisions
           </h2>
-          <LiveDecisionPanel decisions={decisions} />
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <LiveDecisionPanel decisions={decisions} />
+          </div>
         </div>
       </div>
 
-      <div className="glass-card rounded-xl p-4 max-h-72 overflow-y-auto">
-        <h2 className="text-sm font-semibold text-zinc-400 mb-3">
+      <div className="glass-card rounded-xl p-4 h-[400px] flex flex-col">
+        <h2 className="text-sm font-semibold text-zinc-400 mb-3 shrink-0">
           Agent Message Feed
         </h2>
-        <MessageFeed messages={messages} />
-        <div ref={messageEndRef} />
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <MessageFeed messages={messages} />
+          <div ref={messageEndRef} />
+        </div>
       </div>
     </div>
   );

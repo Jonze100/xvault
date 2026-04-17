@@ -104,7 +104,7 @@ export default function TreasuryOverview({ treasury, loading, isOffline }: Props
             <span className="text-xs text-zinc-300 font-medium w-12">
               {asset.symbol}
             </span>
-            <div className="flex-1 h-1 rounded-full bg-zinc-800">
+            <div className="flex-1 h-1 rounded-full bg-zinc-200 dark:bg-zinc-800">
               <div
                 className="h-full rounded-full"
                 style={{

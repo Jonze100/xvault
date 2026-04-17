@@ -26,7 +26,7 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
             Treasury Dashboard
           </h1>
           <p className="text-sm text-zinc-500 mt-0.5">

@@ -22,11 +22,20 @@ export default function AssetTable({ assets, loading }: Props) {
     );
   }
 
+  if (assets.length === 0) {
+    return (
+      <div className="glass-card rounded-xl p-8 text-center">
+        <p className="text-sm text-zinc-500 dark:text-zinc-600">No assets in treasury</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-700 mt-1">Connect your Agentic Wallet to see real balances</p>
+      </div>
+    );
+  }
+
   return (
     <div className="glass-card rounded-xl overflow-x-auto">
       <table className="w-full text-sm min-w-[540px]">
         <thead>
-          <tr className="border-b border-zinc-800 text-xs text-zinc-500">
+          <tr className="border-b border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500">
             <th className="text-left px-4 py-3 font-medium">Asset</th>
             <th className="text-right px-4 py-3 font-medium">Balance</th>
             <th className="text-right px-4 py-3 font-medium">Price</th>
@@ -39,7 +48,7 @@ export default function AssetTable({ assets, loading }: Props) {
           {assets.map((asset) => (
             <tr
               key={asset.symbol}
-              className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
+              className="border-b border-zinc-200/50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
             >
               <td className="px-4 py-3">
                 <div>

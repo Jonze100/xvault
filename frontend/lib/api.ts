@@ -141,6 +141,53 @@ export const economyApi = {
 };
 
 // -----------------------------------------------------------------------------
+// Agentic Wallet Endpoints
+// -----------------------------------------------------------------------------
+
+export const walletApi = {
+  /** Send OTP to email for Agentic Wallet login */
+  login: (email: string) =>
+    apiFetch<{ ok: boolean; message: string }>("/api/wallet/login", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
+  /** Verify OTP and connect wallet */
+  verify: (code: string) =>
+    apiFetch<{
+      ok: boolean;
+      account_id: string;
+      account_name: string;
+      xlayer_address: string;
+      evm_address: string;
+    }>("/api/wallet/verify", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+
+  /** Get current wallet session status */
+  status: () =>
+    apiFetch<{
+      logged_in: boolean;
+      email: string | null;
+      xlayer_address: string | null;
+      evm_address: string | null;
+    }>("/api/wallet/status"),
+
+  /** Get wallet balance on X Layer */
+  balance: () =>
+    apiFetch<{
+      address: string;
+      total_value_usd: string;
+      tokens: Array<{ symbol: string; balance: string; tokenPrice: string }>;
+    }>("/api/wallet/balance"),
+
+  /** Logout and clear session */
+  logout: () =>
+    apiFetch<{ ok: boolean }>("/api/wallet/logout", { method: "POST" }),
+};
+
+// -----------------------------------------------------------------------------
 // Natural Language Command Endpoint
 // -----------------------------------------------------------------------------
 

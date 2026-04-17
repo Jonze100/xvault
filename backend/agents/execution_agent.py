@@ -266,7 +266,9 @@ Respond ONLY with valid JSON:
             to_contract=to_contract,
         )
 
-        if not settings.execution_agent_wallet_address:
+        # Use agentic wallet (logged in via onchainos wallet login) for execution
+        wallet_addr = settings.execution_agent_wallet_address or settings.treasury_wallet_address
+        if not wallet_addr:
             log.warning("execution_agent.swap.no_wallet_configured")
             return self._mock_swap_result(signal, assessment)
 
@@ -276,23 +278,26 @@ Respond ONLY with valid JSON:
             "--to", to_contract or "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
             "--readable-amount", readable_amount,
             "--chain", "xlayer",
-            "--wallet", settings.execution_agent_wallet_address,
+            "--wallet", wallet_addr,
             "--slippage", slippage,
         )
 
         if result:
-            return {
-                "success": True,
-                "type": "swap",
-                "tx_hash": result.get("txHash", ""),
-                "from_token": result.get("fromToken", {}).get("symbol", "USDC"),
-                "to_token": result.get("toToken", {}).get("symbol", token),
-                "amount_in": float(result.get("amountIn", 0)),
-                "amount_out": float(result.get("amountOut", 0)),
-                "price_impact": float(result.get("priceImpact", 0)),
-                "gas_used": result.get("gasUsed", ""),
-                "chain": "xlayer",
-            }
+            # Real API shape: { "ok": true, "data": { "txHash": ..., ... } }
+            data = result.get("data", result) if isinstance(result, dict) else result
+            if isinstance(data, dict):
+                return {
+                    "success": True,
+                    "type": "swap",
+                    "tx_hash": data.get("txHash", ""),
+                    "from_token": data.get("fromToken", {}).get("symbol", "USDC") if isinstance(data.get("fromToken"), dict) else "USDC",
+                    "to_token": data.get("toToken", {}).get("symbol", token) if isinstance(data.get("toToken"), dict) else token,
+                    "amount_in": float(data.get("amountIn", 0)),
+                    "amount_out": float(data.get("amountOut", 0)),
+                    "price_impact": float(data.get("priceImpact", 0)),
+                    "gas_used": data.get("gasUsed", ""),
+                    "chain": "xlayer",
+                }
 
         log.warning("execution_agent.swap.fallback_result", token=token)
         return self._mock_swap_result(signal, assessment)
@@ -337,7 +342,8 @@ Respond ONLY with valid JSON:
 
         log.info("execution_agent.defi_invest", token=token, amount_usd=amount_usd)
 
-        if not settings.execution_agent_wallet_address:
+        wallet_addr = settings.execution_agent_wallet_address or settings.treasury_wallet_address
+        if not wallet_addr:
             log.warning("execution_agent.defi_invest.no_wallet_configured")
             return self._mock_invest_result(signal, assessment, strategy)
 
@@ -367,7 +373,7 @@ Respond ONLY with valid JSON:
             "defi", "invest",
             "--investment-id", best_opportunity["investmentId"],
             "--amount", str(round(amount_usd, 2)),
-            "--wallet", settings.execution_agent_wallet_address,
+            "--wallet", wallet_addr,
         )
 
         if invest_result:

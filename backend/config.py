@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     execution_agent_wallet_address: str = ""
     portfolio_agent_wallet_address: str = ""
     # Economy Agent master wallet — registered via `onchainos wallet login`
-    economy_agent_wallet_address: str = "0xb5c600f74627c63476f7a7e89a6a616723783fce"
+    economy_agent_wallet_address: str = "0x10bfbc3a505e78c3721993945ccbd391f8048f91"
 
     # x402 service provider address (receives agent purchase payments)
     service_provider_address: str = ""

@@ -22,7 +22,7 @@ export default function TreasuryPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Treasury</h1>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Treasury</h1>
           <p className="text-sm text-zinc-500 mt-0.5">
             Managed by Portfolio Agent · Execution Agent
           </p>
@@ -80,7 +80,7 @@ export default function TreasuryPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-zinc-800">
+      <div className="flex gap-1 border-b border-zinc-200 dark:border-zinc-800">
         {(["assets", "transactions", "defi"] as const).map((tab) => (
           <button
             key={tab}
@@ -104,9 +104,9 @@ export default function TreasuryPage() {
         <TransactionHistory transactions={transactions ?? []} />
       )}
       {activeTab === "defi" && (
-        <div className="glass-card rounded-xl p-8 text-center text-zinc-500">
-          {/* TODO: DeFi position cards — LP pools, yield farms via okx-defi-portfolio */}
-          DeFi positions loaded from <code>okx-defi-portfolio</code> skill
+        <div className="glass-card rounded-xl p-8 text-center">
+          <p className="text-sm text-zinc-500">No DeFi positions yet</p>
+          <p className="text-xs text-zinc-400 mt-1">Positions will appear here when agents deploy funds to yield strategies</p>
         </div>
       )}
     </div>

@@ -11,10 +11,13 @@ GET /api/treasury/risk-heatmap — Protocol risk exposure
 POST /api/treasury/rebalance  — Trigger rebalance cycle
 """
 
+import asyncio
+import json
+import os
 import structlog
 import uuid
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, Query
 
@@ -24,6 +27,76 @@ from config import get_settings
 log = structlog.get_logger(__name__)
 router = APIRouter()
 settings = get_settings()
+
+ONCHAINOS = os.path.expanduser("~/.local/bin/onchainos")
+
+
+async def _run_onchainos(*args: str, timeout: int = 30) -> Any | None:
+    """Execute onchainos CLI and return parsed JSON output."""
+    cmd = [ONCHAINOS, *args]
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+        if proc.returncode != 0:
+            return None
+        return json.loads(stdout.decode().strip())
+    except (asyncio.TimeoutError, json.JSONDecodeError, FileNotFoundError):
+        return None
+
+
+async def _fetch_live_wallet_balance(address: str) -> tuple[float, list[dict]]:
+    """Fetch real wallet balance from onchainos portfolio all-balances."""
+    if not address:
+        return 0.0, []
+
+    result = await _run_onchainos(
+        "portfolio", "all-balances",
+        "--address", address,
+        "--chains", "196",
+    )
+    if not result or not result.get("ok"):
+        return 0.0, []
+
+    raw_data = result.get("data", [])
+    if isinstance(raw_data, dict):
+        details = raw_data.get("details", [])
+        if details:
+            token_assets = details[0].get("tokenAssets", [])
+        else:
+            token_assets = raw_data.get("tokenAssets", [])
+    elif isinstance(raw_data, list) and raw_data:
+        token_assets = raw_data[0].get("tokenAssets", []) if isinstance(raw_data[0], dict) else []
+    else:
+        token_assets = []
+
+    assets = []
+    total = 0.0
+    for a in token_assets:
+        bal = float(a.get("balance", 0))
+        price = float(a.get("tokenPrice", 0))
+        value = bal * price
+        if bal > 0:
+            assets.append({
+                "symbol": a.get("symbol", "UNKNOWN"),
+                "balance": bal,
+                "price_usd": price,
+                "value_usd": value,
+                "allocation_pct": 0,  # computed after
+                "pnl_24h_pct": float(a.get("priceChangeRate24H", 0)) * 100,
+                "pnl_24h_usd": 0,
+                "chain": "xlayer",
+            })
+            total += value
+
+    # Compute allocation percentages
+    for a in assets:
+        a["allocation_pct"] = (a["value_usd"] / total * 100) if total > 0 else 0
+
+    return total, assets
 
 
 def _compute_risk_from_assets(assets: list[dict]) -> int:
@@ -110,22 +183,24 @@ async def get_treasury():
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-    # No snapshot yet — return zeros so the dashboard shows real emptiness
+    # No snapshot in DB — try fetching live wallet balance from onchainos
+    live_total, live_assets = await _fetch_live_wallet_balance(settings.treasury_wallet_address)
+
     return {
         "success": True,
         "data": {
             "id": str(uuid.uuid4()),
             "name": "XVault Treasury",
-            "total_value_usd": 0.0,
+            "total_value_usd": live_total,
             "total_pnl_24h_usd": 0.0,
             "total_pnl_24h_pct": 0.0,
             "total_pnl_7d_usd": 0.0,
             "total_pnl_all_time_usd": 0.0,
-            "risk_score": 0,
+            "risk_score": _compute_risk_from_assets(live_assets) if live_assets else 0,
             "last_rebalance": None,
             "performance_fees_collected_usd": total_fees,
             "wallet_address": settings.treasury_wallet_address,
-            "assets": [],
+            "assets": live_assets,
         },
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

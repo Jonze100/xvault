@@ -48,7 +48,7 @@ settings = get_settings()
 ONCHAINOS = os.path.expanduser("~/.local/bin/onchainos")
 
 # Economy Agent's master wallet on OKX X Layer
-ECONOMY_WALLET = "0xb5c600f74627c63476f7a7e89a6a616723783fce"
+ECONOMY_WALLET = "0x10bfbc3a505e78c3721993945ccbd391f8048f91"
 
 # Fee distribution percentages (must sum to 1.0)
 FEE_SPLITS = {

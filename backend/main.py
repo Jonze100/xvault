@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
-from api.routes import treasury, agents, decisions, transactions, economy, command
+from api.routes import treasury, agents, decisions, transactions, economy, command, wallet
 from api.websocket import router as ws_router
 from crons.scheduler import start_scheduler, shutdown_scheduler
 import api.state as _state
@@ -218,6 +218,7 @@ app.include_router(decisions.router,    prefix="/api/decisions",    tags=["decis
 app.include_router(transactions.router, prefix="/api/transactions", tags=["transactions"])
 app.include_router(economy.router,      prefix="/api/economy",      tags=["economy"])
 app.include_router(command.router,      prefix="/api",              tags=["command"])
+app.include_router(wallet.router,      prefix="/api/wallet",       tags=["wallet"])
 
 # WebSocket
 app.include_router(ws_router)

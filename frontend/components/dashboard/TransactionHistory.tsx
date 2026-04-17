@@ -9,9 +9,9 @@ import type { Transaction } from "@/lib/types";
 import { clsx } from "clsx";
 
 const STATUS_STYLES: Record<string, string> = {
-  pending:   "bg-amber-900/30 text-amber-400",
-  confirmed: "bg-emerald-900/30 text-emerald-400",
-  failed:    "bg-red-900/30 text-red-400",
+  pending:   "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  confirmed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  failed:    "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
 const TYPE_ICONS: Record<string, string> = {
@@ -29,8 +29,9 @@ interface Props {
 export default function TransactionHistory({ transactions }: Props) {
   if (transactions.length === 0) {
     return (
-      <div className="glass-card rounded-xl p-8 text-center text-zinc-600 text-sm">
-        No transactions yet
+      <div className="glass-card rounded-xl p-8 text-center">
+        <p className="text-sm text-zinc-500 dark:text-zinc-600">No transactions yet</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-700 mt-1">Transactions will appear here when agents execute trades on X Layer</p>
       </div>
     );
   }
@@ -39,7 +40,7 @@ export default function TransactionHistory({ transactions }: Props) {
     <div className="glass-card rounded-xl overflow-x-auto">
       <table className="w-full text-sm min-w-[560px]">
         <thead>
-          <tr className="border-b border-zinc-800 text-xs text-zinc-500">
+          <tr className="border-b border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500">
             <th className="text-left px-4 py-3 font-medium">Type</th>
             <th className="text-left px-4 py-3 font-medium">Trade</th>
             <th className="text-right px-4 py-3 font-medium">Value</th>
@@ -52,7 +53,7 @@ export default function TransactionHistory({ transactions }: Props) {
           {transactions.map((tx) => (
             <tr
               key={tx.id}
-              className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
+              className="border-b border-zinc-200/50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
             >
               <td className="px-4 py-3">
                 <span className="text-base">{TYPE_ICONS[tx.type] ?? "🔸"}</span>

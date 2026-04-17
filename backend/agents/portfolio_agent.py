@@ -197,7 +197,20 @@ class PortfolioAgent:
         )
 
         if result:
-            assets = result.get("tokenAssets", [])
+            # Real API shape: { "ok": true, "data": { "details": [...], "totalValueUsd": "..." } }
+            # or { "ok": true, "data": [ ... ] }
+            raw_data = result.get("data", result) if isinstance(result, dict) else result
+            if isinstance(raw_data, dict):
+                # Nested: data.details[0].tokenAssets or data.tokenAssets
+                details = raw_data.get("details", [])
+                if details and isinstance(details, list):
+                    assets = details[0].get("tokenAssets", [])
+                else:
+                    assets = raw_data.get("tokenAssets", [])
+            elif isinstance(raw_data, list):
+                assets = raw_data
+            else:
+                assets = []
             return [
                 {
                     "symbol": a.get("symbol", "UNKNOWN"),
@@ -245,20 +258,23 @@ class PortfolioAgent:
             return {}
 
         result = await self._run_onchainos(
-            "portfolio", "overview",
+            "market", "portfolio-overview",
             "--address", address,
             "--chain", "xlayer",
-            "--time-frame", "1d",
+            "--time-frame", "1",  # 1=1D, 2=3D, 3=7D, 4=1M
         )
 
         if result:
-            return {
-                "realized_pnl_usd": float(result.get("realizedPnlUsd", 0)),
-                "unrealized_pnl_usd": float(result.get("unrealizedPnlUsd", 0)),
-                "total_pnl_usd": float(result.get("totalPnlUsd", 0)),
-                "total_pnl_pct": float(result.get("totalPnlPercent", 0)),
-                "win_rate": float(result.get("winRate", 0)),
-            }
+            # Real API shape: { "ok": true, "data": { "realizedPnlUsd": ..., ... } }
+            data = result.get("data", result) if isinstance(result, dict) else result
+            if isinstance(data, dict):
+                return {
+                    "realized_pnl_usd": float(data.get("realizedPnlUsd", 0)),
+                    "unrealized_pnl_usd": float(data.get("unrealizedPnlUsd", 0)),
+                    "total_pnl_usd": float(data.get("totalPnlUsd", 0)),
+                    "total_pnl_pct": float(data.get("totalPnlPercent", 0)),
+                    "win_rate": float(data.get("winRate", 0)),
+                }
 
         return {}
 

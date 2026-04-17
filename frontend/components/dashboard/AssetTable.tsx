@@ -52,17 +52,17 @@ export default function AssetTable({ assets, loading }: Props) {
             >
               <td className="px-4 py-3">
                 <div>
-                  <p className="font-semibold text-zinc-200">{asset.symbol}</p>
+                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">{asset.symbol}</p>
                   <p className="text-xs text-zinc-600">{asset.chain}</p>
                 </div>
               </td>
-              <td className="px-4 py-3 text-right font-mono text-zinc-300">
+              <td className="px-4 py-3 text-right font-mono text-zinc-600 dark:text-zinc-300">
                 {asset.balance.toFixed(4)}
               </td>
-              <td className="px-4 py-3 text-right text-zinc-300">
+              <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-300">
                 ${asset.price_usd.toLocaleString("en-US", { maximumFractionDigits: 2 })}
               </td>
-              <td className="px-4 py-3 text-right font-semibold text-zinc-200">
+              <td className="px-4 py-3 text-right font-semibold text-zinc-800 dark:text-zinc-200">
                 ${asset.value_usd.toLocaleString("en-US", { maximumFractionDigits: 0 })}
               </td>
               <td className="px-4 py-3 text-right text-zinc-400">

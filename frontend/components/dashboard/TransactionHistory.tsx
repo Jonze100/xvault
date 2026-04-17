@@ -71,7 +71,7 @@ export default function TransactionHistory({ transactions }: Props) {
                   {tx.tx_hash.slice(0, 10)}…
                 </a>
               </td>
-              <td className="px-4 py-3 text-right font-semibold text-zinc-200">
+              <td className="px-4 py-3 text-right font-semibold text-zinc-800 dark:text-zinc-200">
                 ${tx.value_usd.toFixed(0)}
               </td>
               <td className="px-4 py-3 text-right capitalize text-zinc-400">

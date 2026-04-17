@@ -101,7 +101,7 @@ export default function TreasuryOverview({ treasury, loading, isOffline }: Props
               className="w-2.5 h-2.5 rounded-sm shrink-0"
               style={{ backgroundColor: COLORS[i % COLORS.length] }}
             />
-            <span className="text-xs text-zinc-300 font-medium w-12">
+            <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium w-12">
               {asset.symbol}
             </span>
             <div className="flex-1 h-1 rounded-full bg-zinc-200 dark:bg-zinc-800">

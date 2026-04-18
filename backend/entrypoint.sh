@@ -76,7 +76,13 @@ shutil.copy('$ONCHAINOS_DIR/session.json', '$XDG_ONCHAINOS/session.json')
       onchainos wallet login --force 2>&1 | head -5 || echo "[entrypoint] AK login attempt completed"
     fi
 
+    # After AK login, switch to the correct account that owns our wallet
+    WALLET_ACCOUNT_ID="7b76a28d-3007-410b-b8ee-a1632c7035d8"
+    echo "[entrypoint] switching to account $WALLET_ACCOUNT_ID..."
+    onchainos wallet switch "$WALLET_ACCOUNT_ID" 2>&1 | head -5 || echo "[entrypoint] wallet switch failed"
+
     # Re-check login status
+    echo "[entrypoint] final wallet status:"
     onchainos wallet status 2>&1 | head -15 || echo "[entrypoint] wallet status check failed"
   fi
 else

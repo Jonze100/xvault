@@ -260,14 +260,13 @@ class RiskAgent:
                 "raw": data,
             }
 
-        # Fallback when CLI unavailable — be conservative, reject with low score
-        log.error("risk_agent.security.REAL_CLI_FAILED", token=token)
+        # CLI failed — be conservative, reject with low score
+        log.error("risk_agent.security.CLI_FAILED", token=token)
         return {
             "score": 0,
             "flags": ["security_scan_failed"],
             "is_verified": False,
             "risk_level": 3,
-            "simulated": True,
         }
 
     async def _check_audit_log(self, token: str, contract: str) -> dict[str, Any]:

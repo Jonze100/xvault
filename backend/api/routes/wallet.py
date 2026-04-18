@@ -50,7 +50,7 @@ class WalletSession(BaseModel):
     evm_address: str | None = None
 
 
-# ── In-memory session (single-tenant for hackathon demo) ─────────────────────
+# ── In-memory session (single-tenant for hackathon) ──────────────────────────
 
 _session = WalletSession()
 

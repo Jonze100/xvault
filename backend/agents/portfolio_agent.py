@@ -188,7 +188,7 @@ class PortfolioAgent:
         address = settings.treasury_wallet_address
         if not address:
             log.warning("portfolio_agent.wallet.no_address_configured")
-            return self._mock_wallet_positions()
+            return self._empty_positions()
 
         result = await self._run_onchainos(
             "portfolio", "all-balances",
@@ -417,11 +417,11 @@ class PortfolioAgent:
         except Exception as e:
             log.warning("portfolio_agent.persist_snapshot.failed", error=str(e))
 
-    # ─── fallback mock data ──────────────────────────────────────────────────
+    # ─── fallback ─────────────────────────────────────────────────────────────
 
-    def _mock_wallet_positions(self) -> list[dict]:
-        """Return empty positions when CLI or treasury address is unavailable."""
-        log.warning("portfolio_agent.wallet.no_address — returning empty positions")
+    def _empty_positions(self) -> list[dict]:
+        """Return empty positions when treasury address is not configured."""
+        log.warning("portfolio_agent.no_treasury_address — returning empty")
         return []
 
     async def _broadcast_status(self, status: str) -> None:

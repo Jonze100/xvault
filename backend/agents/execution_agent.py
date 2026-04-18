@@ -287,7 +287,7 @@ Respond ONLY with valid JSON:
         wallet_addr = _state.get_active_wallet() or settings.execution_agent_wallet_address or settings.treasury_wallet_address
         if not wallet_addr:
             log.warning("execution_agent.swap.no_wallet_configured")
-            return self._mock_swap_result(signal, assessment)
+            return self._failed_swap_result(signal, "no wallet configured")
 
         result = await self._run_onchainos(
             "swap", "execute",
@@ -321,8 +321,8 @@ Respond ONLY with valid JSON:
                     "chain": "xlayer",
                 }
 
-        log.warning("execution_agent.swap.fallback_result", token=token)
-        return self._mock_swap_result(signal, assessment)
+        log.warning("execution_agent.swap.cli_returned_no_data", token=token)
+        return self._failed_swap_result(signal, "onchainos swap returned no data")
 
     async def _execute_defi_invest(
         self, signal: dict, assessment: dict, strategy: dict
@@ -367,7 +367,7 @@ Respond ONLY with valid JSON:
         wallet_addr = _state.get_active_wallet() or settings.execution_agent_wallet_address or settings.treasury_wallet_address
         if not wallet_addr:
             log.warning("execution_agent.defi_invest.no_wallet_configured")
-            return self._mock_invest_result(signal, assessment, strategy)
+            return self._failed_invest_result(signal, "defi invest failed")
 
         # 1. Find best yield opportunity
         search_result = await self._run_onchainos(
@@ -388,7 +388,7 @@ Respond ONLY with valid JSON:
 
         if not best_opportunity:
             log.warning("execution_agent.defi_invest.no_opportunities", token=token)
-            return self._mock_invest_result(signal, assessment, strategy)
+            return self._failed_invest_result(signal, "defi invest failed")
 
         # 2. Execute the investment
         invest_result = await self._run_onchainos(
@@ -409,33 +409,29 @@ Respond ONLY with valid JSON:
                 "chain": "xlayer",
             }
 
-        return self._mock_invest_result(signal, assessment, strategy)
+        return self._failed_invest_result(signal, "defi invest failed")
 
     # ─── helpers ────────────────────────────────────────────────────────────
 
-    def _mock_swap_result(self, signal: dict, assessment: dict) -> dict[str, Any]:
-        """Return a FAILED result when CLI is unavailable — never fake success."""
-        log.error("execution_agent.swap.REAL_CLI_FAILED", token=signal["token"])
+    def _failed_swap_result(self, signal: dict, error_msg: str = "") -> dict[str, Any]:
+        """Return a hard failure — no simulation, no fake data."""
+        log.error("execution_agent.swap.CLI_FAILED", token=signal["token"], error=error_msg)
         return {
             "success": False,
             "type": "swap",
-            "error": "onchainos CLI swap failed — no real transaction executed",
-            "simulated": True,
+            "error": error_msg or "onchainos swap execute failed",
             "from_token": "USDC",
             "to_token": signal["token"],
             "chain": "xlayer",
         }
 
-    def _mock_invest_result(
-        self, signal: dict, assessment: dict, strategy: dict
-    ) -> dict[str, Any]:
-        """Return a FAILED result when CLI is unavailable — never fake success."""
-        log.error("execution_agent.invest.REAL_CLI_FAILED", token=signal["token"])
+    def _failed_invest_result(self, signal: dict, error_msg: str = "") -> dict[str, Any]:
+        """Return a hard failure — no simulation, no fake data."""
+        log.error("execution_agent.invest.CLI_FAILED", token=signal["token"], error=error_msg)
         return {
             "success": False,
             "type": "invest",
-            "error": "onchainos CLI defi invest failed — no real transaction executed",
-            "simulated": True,
+            "error": error_msg or "onchainos defi invest failed",
             "chain": "xlayer",
         }
 

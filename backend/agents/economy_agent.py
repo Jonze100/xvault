@@ -267,7 +267,7 @@ class EconomyAgent:
         treasury = settings.treasury_wallet_address
         if not treasury:
             log.warning("economy_agent.x402.no_treasury_configured")
-            return self._mock_x402_result(fee_usd, ECONOMY_WALLET)
+            return self._failed_x402_result(fee_usd, ECONOMY_WALLET)
 
         accepts_json = _x402_accepts(fee_usd, ECONOMY_WALLET)
 
@@ -290,7 +290,7 @@ class EconomyAgent:
             }
 
         log.info("economy_agent.x402.collect.fallback")
-        return self._mock_x402_result(fee_usd, ECONOMY_WALLET)
+        return self._failed_x402_result(fee_usd, ECONOMY_WALLET)
 
     async def _distribute_to_agents(
         self, fee_usd: float, collection: dict
@@ -351,7 +351,7 @@ class EconomyAgent:
                     }
 
             if not payment_result:
-                payment_result = self._mock_x402_result(agent_amount, agent_wallet or "")
+                payment_result = self._failed_x402_result(agent_amount, agent_wallet or "")
 
             distribution = {
                 "agent": agent_name,
@@ -386,14 +386,13 @@ class EconomyAgent:
 
     # ─── helpers ────────────────────────────────────────────────────────────
 
-    def _mock_x402_result(self, amount_usd: float, to: str) -> dict[str, Any]:
-        """Return a FAILED result when CLI/wallet is unavailable — never fake success."""
-        log.error("economy_agent.x402.REAL_CLI_FAILED", amount=amount_usd, to=to)
+    def _failed_x402_result(self, amount_usd: float, to: str, error_msg: str = "") -> dict[str, Any]:
+        """Return a hard failure — no simulation, no fake data."""
+        log.error("economy_agent.x402.CLI_FAILED", amount=amount_usd, to=to, error=error_msg)
         return {
             "success": False,
             "payment_proof": {},
-            "error": "onchainos CLI x402 payment failed — no real transaction executed",
-            "simulated": True,
+            "error": error_msg or "onchainos x402 payment failed",
             "amount_usd": amount_usd,
             "to": to,
             "collected_at": datetime.now(timezone.utc).isoformat(),
@@ -482,7 +481,7 @@ class EconomyAgent:
                 "economy_agent.agent_purchase.not_configured",
                 agent=agent_name,
             )
-            return True  # non-fatal in demo mode
+            return False  # cannot process purchase without wallet config
 
         accepts_json = _x402_accepts(cost_usd, service_provider)
         result = await self._run_onchainos(

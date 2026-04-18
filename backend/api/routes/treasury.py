@@ -132,6 +132,7 @@ async def get_treasury():
             result = (
                 db.table("treasury_snapshots")
                 .select("*")
+                .lte("total_value_usd", 1000)
                 .order("snapshot_at", desc=True)
                 .limit(1)
                 .execute()
@@ -234,6 +235,7 @@ async def get_pnl_history(
             query = (
                 db.table("treasury_snapshots")
                 .select("total_value_usd, pnl_usd, pnl_pct, snapshot_at")
+                .lte("total_value_usd", 1000)
                 .order("snapshot_at", desc=False)
                 .limit(500)
             )

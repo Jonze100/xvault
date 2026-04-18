@@ -214,8 +214,7 @@ class XVaultOrchestrator:
     def _route_after_monitor(self, state: OrchestratorState) -> str:
         if state.detected_profit_usd >= 500:
             return "fee_collect"
-        if state.portfolio.get("rebalance_needed"):
-            return "scan"
+        # Don't loop back to scan — prevents GraphRecursionError
         return "complete"
 
     # -------------------------------------------------------------------------

@@ -268,7 +268,7 @@ Respond ONLY with valid JSON:
           }
         """
         token = signal["token"]
-        amount_usd = min(assessment.get("max_size_usd", 0.50), 1.0)  # Cap at $1 to protect small wallet
+        amount_usd = min(assessment.get("max_size_usd", 0.30), 0.30)  # Cap at $0.30 to protect small wallet
         # Use contract from signal data if available, fall back to known tokens
         to_contract = signal.get("contract") or signal.get("market_data", {}).get("contract") or XLAYER_TOKENS.get(token, "")
         slippage = str(strategy.get("slippage_tolerance", 0.005) * 100)  # percent

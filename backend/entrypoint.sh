@@ -2,6 +2,8 @@
 set -e
 
 # ── Write onchainos CLI config from env vars ────────────────────────────────
+# Session created via `onchainos wallet login` on Railway SSH, then exported
+# as base64 env var. This is a Linux-native TEE session — no cross-platform issues.
 ONCHAINOS_DIR="$HOME/.onchainos"
 mkdir -p "$ONCHAINOS_DIR"
 
@@ -28,7 +30,7 @@ fi
 
 echo '{}' > "$ONCHAINOS_DIR/cache.json"
 
-# Also write to XDG config dir
+# Also write to XDG config dir in case onchainos looks there
 XDG_ONCHAINOS="$HOME/.config/onchainos"
 mkdir -p "$XDG_ONCHAINOS"
 [ -f "$ONCHAINOS_DIR/session.json" ] && cp "$ONCHAINOS_DIR/session.json" "$XDG_ONCHAINOS/"
@@ -37,54 +39,11 @@ mkdir -p "$XDG_ONCHAINOS"
 [ -f "$ONCHAINOS_DIR/chain_cache.json" ] && cp "$ONCHAINOS_DIR/chain_cache.json" "$XDG_ONCHAINOS/"
 echo '{}' > "$XDG_ONCHAINOS/cache.json"
 
-# ── Authenticate onchainos via API Key (AK login) ──────────────────────────
-# The TEE session from macOS doesn't transfer to Linux containers.
-# Use OKX API keys to authenticate directly on this machine.
+# ── Verify onchainos auth ──────────────────────────────────────────────────
 if command -v onchainos >/dev/null 2>&1; then
-  echo "[entrypoint] onchainos binary found: $(onchainos --version 2>/dev/null || echo 'unknown')"
-
-  # Check if already logged in
-  LOGGED_IN=$(onchainos wallet status 2>&1 | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['data']['loggedIn'])" 2>/dev/null || echo "False")
-
-  if [ "$LOGGED_IN" = "True" ]; then
-    echo "[entrypoint] onchainos already logged in"
-  else
-    echo "[entrypoint] onchainos not logged in — attempting AK (API Key) login..."
-    # AK login: omit email, uses OKX_API_KEY / OKX_SECRET_KEY / OKX_PASSPHRASE env vars
-    # or the apiKey in session.json
-    if [ -n "$OKX_API_KEY" ] && [ -n "$OKX_SECRET_KEY" ] && [ -n "$OKX_PASSPHRASE" ]; then
-      # Write API key into session.json so onchainos can use it
-      python3 -c "
-import json
-try:
-    with open('$ONCHAINOS_DIR/session.json') as f:
-        d = json.load(f)
-except:
-    d = {}
-d['apiKey'] = '$OKX_API_KEY'
-d['secretKey'] = '$OKX_SECRET_KEY'
-d['passphrase'] = '$OKX_PASSPHRASE'
-d['projectId'] = '${OKX_PROJECT_ID:-}'
-with open('$ONCHAINOS_DIR/session.json', 'w') as f:
-    json.dump(d, f, indent=2)
-# Also copy to XDG
-import shutil
-shutil.copy('$ONCHAINOS_DIR/session.json', '$XDG_ONCHAINOS/session.json')
-" 2>/dev/null && echo "[entrypoint] API keys injected into session.json"
-
-      # Try AK login (no email = API key mode)
-      onchainos wallet login --force 2>&1 | head -5 || echo "[entrypoint] AK login attempt completed"
-    fi
-
-    # After AK login, switch to the correct account that owns our wallet
-    WALLET_ACCOUNT_ID="7b76a28d-3007-410b-b8ee-a1632c7035d8"
-    echo "[entrypoint] switching to account $WALLET_ACCOUNT_ID..."
-    onchainos wallet switch "$WALLET_ACCOUNT_ID" 2>&1 | head -5 || echo "[entrypoint] wallet switch failed"
-
-    # Re-check login status
-    echo "[entrypoint] final wallet status:"
-    onchainos wallet status 2>&1 | head -15 || echo "[entrypoint] wallet status check failed"
-  fi
+  echo "[entrypoint] onchainos $(onchainos --version 2>/dev/null || echo 'unknown')"
+  # Show wallet status — should show loggedIn:true with email account 7b76a28d
+  onchainos wallet status 2>&1 | head -15 || echo "[entrypoint] wallet status failed"
 else
   echo "[entrypoint] WARNING: onchainos binary not found"
   curl -fsSL https://raw.githubusercontent.com/nicefellow1234/onchainos-skills/main/install.sh | bash || true

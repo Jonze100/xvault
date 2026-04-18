@@ -53,8 +53,8 @@ if command -v onchainos >/dev/null 2>&1; then
   echo "[entrypoint] onchainos config dir contents:"
   ls -la "$ONCHAINOS_DIR/" 2>/dev/null || true
   ls -la "$XDG_ONCHAINOS/" 2>/dev/null || true
-  # Try to select the correct wallet
-  onchainos wallet select --account-id "7b76a28d-3007-410b-b8ee-a1632c7035d8" 2>&1 || echo "[entrypoint] wallet select failed"
+  # Show full wallet status JSON for debugging
+  onchainos wallet status 2>&1 || echo "[entrypoint] wallet status failed"
 else
   echo "[entrypoint] WARNING: onchainos binary not found at expected path"
   # Try to install it

@@ -31,6 +31,21 @@ The agents communicate through a LangGraph state machine — each decision is lo
 
 ---
 
+## Real Onchain Transactions
+
+All transactions executed via `onchainos swap execute` (okx-dex-swap) on OKX X Layer:
+
+| Tx Hash | Swap | Amount | Explorer |
+|---------|------|--------|----------|
+| `0x3bc4ff64...b662` | USDC → OKB | $0.50 | [View](https://www.okx.com/explorer/xlayer/tx/0x3bc4ff649474718a5e429357c6ef0b2390d4a8eed0e8d1566cc9345a9574b662) |
+| `0xe0073953...5291` | USDC → WETH | $0.50 | [View](https://www.okx.com/explorer/xlayer/tx/0xe0073953c57a1477ce932adeae4eb8beff832fd9e1221ba4eab4968c6b735291) |
+| `0x108587cb...d7b5` | USDC → XDOG | $0.30 | [View](https://www.okx.com/explorer/xlayer/tx/0x108587cbeefaf06f9d98dcb2e965d077b785327fc2716ab4b0bd632ced01d7b5) |
+| `0xb51d503e...e5a3` | USDC → XSHIB | $0.30 | [View](https://www.okx.com/explorer/xlayer/tx/0xb51d503eca9733d85909d39d136f19b675c1d274c23d73f393a4be5098d8e5a3) |
+| `0x63a5b0d9...6ae0` | USDC → FDOG | $0.20 | [View](https://www.okx.com/explorer/xlayer/tx/0x63a5b0d954aa789322cb20ff95168d34fe70c6e71b668ce6722c6990178c6ae0) |
+| `0x5643670f...4c9a` | OKB → USDC | $0.87 | [View](https://www.okx.com/explorer/xlayer/tx/0x5643670f3fd6c483cd16d430f0abc84d43691ad8561cf474efe97a8e02704c9a) |
+
+---
+
 ## Agent Pipeline
 
 ```

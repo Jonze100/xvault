@@ -22,6 +22,14 @@ if [ -n "$ONCHAINOS_MACHINE_ID_B64" ]; then
   echo "[entrypoint] onchainos machine-identity written"
 fi
 
+if [ -n "$ONCHAINOS_CHAIN_CACHE_B64" ]; then
+  echo "$ONCHAINOS_CHAIN_CACHE_B64" | base64 -d > "$ONCHAINOS_DIR/chain_cache.json"
+  echo "[entrypoint] onchainos chain_cache.json written"
+fi
+
+# Initialize empty cache
+echo '{}' > "$ONCHAINOS_DIR/cache.json"
+
 # Verify onchainos is installed and authenticated
 if command -v onchainos >/dev/null 2>&1; then
   echo "[entrypoint] onchainos binary found: $(onchainos --version 2>/dev/null || echo 'unknown')"

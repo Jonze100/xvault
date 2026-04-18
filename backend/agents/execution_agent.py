@@ -34,7 +34,7 @@ from anthropic import AsyncAnthropic
 from config import get_settings
 from db.client import get_supabase
 from api.websocket import broadcast
-from api.state import update_agent_status as _update_state
+from api.state import update_agent_status as _update_state, increment_decisions
 import api.state as _state
 
 log = structlog.get_logger(__name__)
@@ -144,6 +144,7 @@ class ExecutionAgent:
             # Persist transaction to DB
             if result.get("success"):
                 await self._record_transaction(signal, result)
+                increment_decisions(self.NAME)
 
                 await broadcast("agent_decision", {
                     "id": str(uuid.uuid4()),
@@ -428,8 +429,14 @@ Respond ONLY with valid JSON:
         }
 
     async def _record_transaction(self, signal: dict, result: dict) -> None:
-        """Persist executed transaction to Supabase transactions table."""
+        """Persist executed transaction to Supabase transactions table.
+        Only records transactions with real tx hashes (64 hex chars after 0x prefix)."""
         if not self.db:
+            return
+        tx_hash = result.get("tx_hash", "")
+        # Reject fake/empty tx hashes — real hashes are 66 chars (0x + 64 hex)
+        if not tx_hash or len(tx_hash.replace("0x", "")) < 64:
+            log.warning("execution_agent.record_tx.skipped_fake_hash", tx_hash=tx_hash)
             return
         try:
             token = signal.get("token", "UNKNOWN")
@@ -444,7 +451,7 @@ Respond ONLY with valid JSON:
                 "amount_in": amount_in,
                 "amount_out": amount_out,
                 "value_usd": amount_in,
-                "tx_hash": result.get("tx_hash", f"0x{uuid.uuid4().hex}"),
+                "tx_hash": tx_hash,
                 "chain": "xlayer",
             }
             if _state.default_treasury_id:

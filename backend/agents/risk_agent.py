@@ -30,7 +30,7 @@ from anthropic import AsyncAnthropic
 
 from config import get_settings
 from api.websocket import broadcast
-from api.state import update_agent_status as _update_state
+from api.state import update_agent_status as _update_state, increment_decisions
 
 log = structlog.get_logger(__name__)
 settings = get_settings()
@@ -124,6 +124,7 @@ class RiskAgent:
             )
 
             # Broadcast decision
+            increment_decisions(self.NAME)
             await broadcast("agent_decision", {
                 "id": str(uuid.uuid4()),
                 "agent": self.NAME,

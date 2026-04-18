@@ -88,10 +88,23 @@ def update_agent_status(
     )
 
 
-def increment_decisions(name: str) -> None:
-    """Increment the decisions_today counter for an agent."""
-    if name in agent_states:
-        agent_states[name]["decisions_today"] += 1
+def increment_decisions(name: str, success: bool = True) -> None:
+    """Increment the decisions_today counter and update success_rate for an agent."""
+    if name not in agent_states:
+        return
+    agent_states[name]["decisions_today"] += 1
+    total = agent_states[name]["decisions_today"]
+    if success:
+        # Recalculate success_rate as running average
+        prev_rate = agent_states[name]["success_rate"]
+        agent_states[name]["success_rate"] = round(
+            ((prev_rate * (total - 1)) + 1.0) / total, 2
+        )
+    else:
+        prev_rate = agent_states[name]["success_rate"]
+        agent_states[name]["success_rate"] = round(
+            (prev_rate * (total - 1)) / total, 2
+        )
 
 
 # Default treasury UUID — set at startup by _ensure_default_treasury() in main.py.

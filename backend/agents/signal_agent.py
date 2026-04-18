@@ -34,7 +34,7 @@ from anthropic import AsyncAnthropic
 from config import get_settings
 from db.client import get_supabase
 from api.websocket import broadcast
-from api.state import update_agent_status as _update_state
+from api.state import update_agent_status as _update_state, increment_decisions
 
 log = structlog.get_logger(__name__)
 settings = get_settings()
@@ -124,6 +124,7 @@ class SignalAgent:
             # 4. Persist and broadcast
             for signal in signals:
                 await self._log_decision(signal)
+                increment_decisions(self.NAME)
                 await broadcast("agent_decision", {
                     "id": str(uuid.uuid4()),
                     "agent": self.NAME,

@@ -420,15 +420,9 @@ class PortfolioAgent:
     # ─── fallback mock data ──────────────────────────────────────────────────
 
     def _mock_wallet_positions(self) -> list[dict]:
-        """Mock wallet positions used when CLI or treasury address is unavailable."""
-        return [
-            {"symbol": "USDC", "contract": "0x74b7f16337b8972027f6196a17a631ac6de26d22",
-             "balance": 65800.0, "price_usd": 1.0, "chain": "xlayer", "is_risk": False},
-            {"symbol": "OKB",  "contract": "",
-             "balance": 860.0,  "price_usd": 48.2, "chain": "xlayer", "is_risk": False},
-            {"symbol": "ETH",  "contract": "0x5a77f1443d16ee5761d310e38b62f77f726bc71c",
-             "balance": 12.5,   "price_usd": 3200.0, "chain": "xlayer", "is_risk": False},
-        ]
+        """Return empty positions when CLI or treasury address is unavailable."""
+        log.warning("portfolio_agent.wallet.no_address — returning empty positions")
+        return []
 
     async def _broadcast_status(self, status: str) -> None:
         now = datetime.now(timezone.utc).isoformat()

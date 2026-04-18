@@ -91,9 +91,14 @@ class ExecutionAgent:
                     "onchainos.nonzero",
                     cmd=cmd,
                     returncode=proc.returncode,
-                    stderr=stderr.decode().strip(),
+                    stdout=stdout.decode().strip()[:500],
+                    stderr=stderr.decode().strip()[:500],
                 )
-                return None
+                # Try parsing stdout anyway — CLI sometimes returns JSON even on non-zero
+                try:
+                    return json.loads(stdout.decode().strip())
+                except (json.JSONDecodeError, ValueError):
+                    return None
             return json.loads(stdout.decode().strip())
         except (asyncio.TimeoutError, json.JSONDecodeError, FileNotFoundError) as exc:
             log.warning("onchainos.error", cmd=cmd, error=str(exc))
@@ -263,8 +268,9 @@ Respond ONLY with valid JSON:
           }
         """
         token = signal["token"]
-        amount_usd = assessment.get("max_size_usd", 1000)
-        to_contract = XLAYER_TOKENS.get(token, "")
+        amount_usd = min(assessment.get("max_size_usd", 0.50), 1.0)  # Cap at $1 to protect small wallet
+        # Use contract from signal data if available, fall back to known tokens
+        to_contract = signal.get("contract") or signal.get("market_data", {}).get("contract") or XLAYER_TOKENS.get(token, "")
         slippage = str(strategy.get("slippage_tolerance", 0.005) * 100)  # percent
 
         # Readable amount: we're spending USDC (1:1 with USD)
@@ -294,17 +300,22 @@ Respond ONLY with valid JSON:
         )
 
         if result:
-            # Real API shape: { "ok": true, "data": { "txHash": ..., ... } }
+            # Real onchainos CLI response:
+            # { "ok": true, "data": { "swapTxHash": "0x...", "fromToken": {...}, "toToken": {...}, "fromAmount": "...", "toAmount": "...", ... } }
             data = result.get("data", result) if isinstance(result, dict) else result
             if isinstance(data, dict):
+                from_token = data.get("fromToken", {})
+                to_token = data.get("toToken", {})
+                from_decimal = int(from_token.get("decimal", 18))
+                to_decimal = int(to_token.get("decimal", 18))
                 return {
                     "success": True,
                     "type": "swap",
-                    "tx_hash": data.get("txHash", ""),
-                    "from_token": data.get("fromToken", {}).get("symbol", "USDC") if isinstance(data.get("fromToken"), dict) else "USDC",
-                    "to_token": data.get("toToken", {}).get("symbol", token) if isinstance(data.get("toToken"), dict) else token,
-                    "amount_in": float(data.get("amountIn", 0)),
-                    "amount_out": float(data.get("amountOut", 0)),
+                    "tx_hash": data.get("swapTxHash", data.get("txHash", "")),
+                    "from_token": from_token.get("tokenSymbol", from_token.get("symbol", "USDC")),
+                    "to_token": to_token.get("tokenSymbol", to_token.get("symbol", token)),
+                    "amount_in": float(data.get("fromAmount", 0)) / (10 ** from_decimal),
+                    "amount_out": float(data.get("toAmount", 0)) / (10 ** to_decimal),
                     "price_impact": float(data.get("priceImpact", 0)),
                     "gas_used": data.get("gasUsed", ""),
                     "chain": "xlayer",

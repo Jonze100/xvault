@@ -244,92 +244,6 @@ class XVaultOrchestrator:
 
         return final_state
 
-    async def _execute_demo_trade(self, token: str = "OKB") -> None:
-        """
-        Execute a real small swap through the full Signal → Risk → Execution pipeline.
-        Used for demo/hackathon to generate verifiable on-chain transactions.
-        """
-        import api.state as _state
-
-        try:
-            # 1. Signal Agent generates a real signal for the token
-            signal = {
-                "id": str(uuid.uuid4()),
-                "token": token,
-                "action": "buy",
-                "confidence": 0.85,
-                "reasoning": f"Demo trade: executing real {token} swap on OKX X Layer to verify pipeline integration with Onchain OS CLI.",
-                "estimated_size_pct": 1.0,
-                "market_data": {},
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-
-            await broadcast("agent_message", {
-                "id": str(uuid.uuid4()),
-                "from_agent": "signal",
-                "to_agent": "risk",
-                "content": f"Demo signal: Buy {token} — forwarding to Risk Agent for security assessment.",
-                "type": "request",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-            _state.increment_decisions("signal")
-
-            # 2. Risk Agent assesses the signal (real onchainos security scan)
-            assessment = await self.risk_agent.assess(signal)
-
-            # Force approval for demo trade (token is known-good: OKB, USDC, ETH)
-            if token in ("OKB", "USDC", "ETH", "WETH", "USDT"):
-                assessment["approved"] = True
-                assessment["max_size_usd"] = 0.50  # Small demo amount
-                assessment["security_score"] = max(assessment.get("security_score", 85), 85)
-
-            if not assessment.get("approved"):
-                await broadcast("agent_message", {
-                    "id": str(uuid.uuid4()),
-                    "from_agent": "risk",
-                    "to_agent": "signal",
-                    "content": f"Demo trade rejected by Risk Agent: {assessment.get('reasoning', 'unknown')}",
-                    "type": "response",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                })
-                return
-
-            # 3. Execution Agent executes the real swap
-            result = await self.execution_agent.execute(
-                signal=signal,
-                assessment=assessment,
-            )
-
-            tx_hash = result.get("tx_hash", "")
-
-            await broadcast("agent_message", {
-                "id": str(uuid.uuid4()),
-                "from_agent": "execution",
-                "to_agent": "portfolio",
-                "content": (
-                    f"Demo trade {'completed' if result.get('success') else 'failed'}: "
-                    f"{token} swap — tx: {tx_hash[:20]}..." if tx_hash else f"{token} swap — no tx hash"
-                ),
-                "type": "response",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-
-            # 4. Portfolio Agent updates positions
-            await self.portfolio_agent.run()
-
-            log.info("demo_trade.complete", token=token, success=result.get("success"), tx_hash=tx_hash)
-
-        except Exception as e:
-            log.error("demo_trade.error", error=str(e))
-            await broadcast("agent_message", {
-                "id": str(uuid.uuid4()),
-                "from_agent": "execution",
-                "to_agent": "all",
-                "content": f"Demo trade failed: {str(e)[:100]}",
-                "type": "error",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-
     async def handle_command(self, command: str) -> dict[str, Any]:
         """
         Process a natural language command from the frontend.
@@ -368,7 +282,7 @@ User command: "{command}"
 
 Classify the command. Respond ONLY with valid JSON, no markdown:
 {{
-  "intent": "run_cycle" | "run_portfolio" | "run_economy" | "rebalance" | "demo_trade" | "query_treasury" | "query_agents" | "query_risk" | "query_yield" | "pause_agent" | "resume_agent" | "unknown",
+  "intent": "run_cycle" | "run_portfolio" | "run_economy" | "rebalance" | "query_treasury" | "query_agents" | "query_risk" | "query_yield" | "pause_agent" | "resume_agent" | "unknown",
   "agent_name": "signal" | "risk" | "execution" | "portfolio" | "economy" | null,
   "token": "<token symbol if mentioned, else null>",
   "answer": "<if intent is query_* or unknown: answer the question directly in 1-2 sentences as the XVault AI, else null>"
@@ -489,13 +403,6 @@ Classify the command. Respond ONLY with valid JSON, no markdown:
                 return {"success": True, "agent": "signal",
                         "message": f"{action_label} triggered — Signal → Risk → Execution pipeline running in background.",
                         "action": intent}
-
-            if intent == "demo_trade":
-                token = parsed.get("token") or "OKB"
-                asyncio.create_task(self._execute_demo_trade(token))
-                return {"success": True, "agent": "execution",
-                        "message": f"Demo trade triggered — executing real $0.50 USDC → {token} swap on OKX X Layer via onchainos CLI.",
-                        "action": "demo_trade"}
 
             # --- Unknown: Claude answers directly ----------------------------
             if not answer:

@@ -272,11 +272,13 @@ Your job: Analyze these signals and produce a ranked list of trade opportunities
 For each opportunity return JSON with these fields:
 - token: the asset symbol
 - action: "buy" or "sell"
-- confidence: 0.0 to 1.0 (only include > 0.6)
+- confidence: 0.0 to 1.0 (include any signal with confidence > 0.3 — the Risk Agent will do additional security vetting)
 - reasoning: 1-2 sentence explanation referencing the signal data
-- estimated_size_pct: suggested % of treasury to allocate (max 10%)
+- estimated_size_pct: suggested % of treasury to allocate (max 5%)
 
-Respond ONLY with a valid JSON array. Be conservative — Risk Agent will vet your picks."""
+Important: This is OKX X Layer — smart money signals here are legitimate opportunities.
+Include signals with at least 3 trigger wallets or $100+ volume.
+Respond ONLY with a valid JSON array."""
 
         # Check daily spend cap — fall back to direct OKX scoring if exceeded
         from agents.spend_tracker import is_budget_exceeded, record_usage

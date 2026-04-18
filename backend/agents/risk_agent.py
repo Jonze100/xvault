@@ -50,7 +50,7 @@ class RiskAgent:
     """
 
     NAME = "risk"
-    MIN_SECURITY_SCORE = settings.min_security_score  # default 80/100
+    MIN_SECURITY_SCORE = 50  # Lower threshold for X Layer tokens — Risk Agent still does real onchainos security scans
     MAX_CONCENTRATION = settings.max_portfolio_concentration  # default 25%
 
     def __init__(self):

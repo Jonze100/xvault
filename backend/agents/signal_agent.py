@@ -338,10 +338,14 @@ Respond ONLY with a valid JSON array."""
                 if s.get("strength", 0) >= 0.1
             ]
 
+        # Build a lookup from token symbol → contract address from ML signals
+        contract_lookup = {s["token"]: s.get("contract", "") for s in ml_signals}
+
         return [
             {
                 "id": str(uuid.uuid4()),
                 **opp,
+                "contract": opp.get("contract") or contract_lookup.get(opp.get("token", ""), ""),
                 "market_data": market_data.get(opp.get("token", ""), {}),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }

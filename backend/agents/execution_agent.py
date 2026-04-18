@@ -280,7 +280,7 @@ Respond ONLY with valid JSON:
             "execution_agent.swap",
             token=token,
             amount_usd=amount_usd,
-            to_contract=to_contract,
+            to_contract=to_contract or "native_OKB",
         )
 
         # Use agentic wallet (logged in via onchainos wallet login) for execution

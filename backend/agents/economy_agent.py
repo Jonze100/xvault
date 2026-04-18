@@ -347,7 +347,7 @@ class EconomyAgent:
                         "tx_hash": raw.get("paymentProof", {})
                                       .get("payload", {})
                                       .get("authorization", {})
-                                      .get("nonce", f"0x{uuid.uuid4().hex}"),
+                                      .get("nonce", ""),
                     }
 
             if not payment_result:
@@ -357,7 +357,7 @@ class EconomyAgent:
                 "agent": agent_name,
                 "amount_usd": agent_amount,
                 "pct": split_pct * 100,
-                "tx_hash": payment_result.get("tx_hash", f"0x{uuid.uuid4().hex}"),
+                "tx_hash": payment_result.get("tx_hash", ""),
                 "to_wallet": agent_wallet or "not_configured",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }

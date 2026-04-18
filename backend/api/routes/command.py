@@ -26,6 +26,40 @@ class CommandRequest(BaseModel):
     command: str
 
 
+class DemoTradeRequest(BaseModel):
+    token: str = "OKB"
+
+
+@router.post("/demo-trade")
+async def demo_trade(body: DemoTradeRequest):
+    """
+    Execute a real small swap ($0.50 USDC → token) through the full
+    Signal → Risk → Execution pipeline on OKX X Layer.
+    Generates verifiable on-chain transactions.
+    """
+    from datetime import datetime, timezone
+    try:
+        orchestrator = get_orchestrator()
+        import asyncio
+        asyncio.create_task(orchestrator._execute_demo_trade(body.token))
+        return {
+            "success": True,
+            "data": {
+                "success": True,
+                "agent": "execution",
+                "message": f"Demo trade triggered — executing real $0.50 USDC → {body.token} swap on OKX X Layer.",
+                "action": "demo_trade",
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    except Exception as exc:
+        return {
+            "success": False,
+            "data": {"success": False, "agent": "execution", "message": str(exc)[:120], "action": "error"},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+
 @router.post("/command")
 async def execute_command(body: CommandRequest):
     """

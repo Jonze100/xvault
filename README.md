@@ -47,6 +47,9 @@ All transactions executed via `onchainos swap execute` (okx-dex-swap) on OKX X L
 | `0xcccbbf79...5b18` | XDOG → USDC | 200 XDOG | [View](https://www.okx.com/explorer/xlayer/tx/0xcccbbf796bf8a3e8c1f53557072cffb23f29efb05fe63349296f94c8d0555b18) |
 | `0x51bb3b91...5d76` | USDC → WETH | $0.30 | [View](https://www.okx.com/explorer/xlayer/tx/0x51bb3b91d14b3b75b5015919df752992a8702f7463a14a61277dba04751c5d76) |
 | `0x9a6557d6...a16e` | USDC → WETH | $0.05 | [View](https://www.okx.com/explorer/xlayer/tx/0x9a6557d691a15b81ae998006bb5da369139aaee6af1e35750c30710caa20a16e) |
+| `0x51b32e86...578e` | USDC → WETH | $0.05 | [View](https://www.okx.com/explorer/xlayer/tx/0x51b32e86e94db5e47bc0d6fd3678299315d2412a7a7e1e3546ff5071fffc578e) |
+| `0x49489608...ac0e` | USDC → XDOG | $0.05 | [View](https://www.okx.com/explorer/xlayer/tx/0x4948960889486346d600f64c1f601008dcecb9089373d7ab2ae809880b82ac0e) |
+| `0x10e28f64...8a6c` | USDC → XSHIB | $0.05 | [View](https://www.okx.com/explorer/xlayer/tx/0x10e28f64e5d09e8a2b65022d0f7e9501e4b162c469ae7601a9c44e4fc4878a6c) |
 
 ---
 
